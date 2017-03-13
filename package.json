@@ -1,0 +1,21 @@
+{
+  "description": "BERT Console",
+  "name": "bert-console",
+  "version": "3.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "shell": "./node_modules/.bin/electron main.js --devtools"
+  },
+  "dependencies": {
+    "chokidar": "^1.6.1",
+    "cmjs-shell": "^0.3.10",
+    "electron": "^1.6.2",
+    "electron-window-state": "^4.0.2",
+    "monaco-editor": "^0.8.3",
+    "pubsub-js": "^1.5.5"
+  },
+  "devDependencies": {
+    "electron-packager": "^8.5.2"
+  }
+}

@@ -1,0 +1,137 @@
+
+.dialog-background-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: background-color .125s;
+  z-index: 9876;
+  display: none;
+  background-color: rgba(0,0,0,.05);
+}
+
+.dialog-base {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9877;
+  display: none;
+  flex-direction: column;
+  text-align: center;
+  margin: 2em;
+}
+
+.dialog-dialog {
+  background: white;
+  min-width: 40%;
+  min-height: 20%;
+  max-height: 90%;
+  max-width: 90%;
+  border-radius: 4px;
+  margin: auto;
+  box-shadow: 0px 3px 5px 5px rgba(0,0,0,.125);
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-body {
+  text-align: left;
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.dialog-header {
+  padding: .7em 1em;
+  text-align: left;
+  border-bottom: 1px solid #ccc;
+  font-size: 18px;
+  font-weight: 300;
+
+  /*
+  background: #aaa;
+  border-color: #aaa;
+  border-bottom: 1px solid #aaa;
+  */
+
+  background: #7dc3db;
+  border-color: #7dc3db;
+  border-bottom: 1px solid #7dc3db;
+
+  color: #fff;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+.dialog-footer {
+  padding: .7em 1em;
+  border-top: 1px solid #ddd;
+
+  /*
+  background: #aaa;
+  border-color: #aaa;
+  border-top: 1px solid #aaa;
+  color: #fff;
+  */
+
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.dialog-footer-align-right {
+  text-align: right;
+}
+
+.dialog-split-footer {
+  display: flex;
+  flex-direction: row;
+}
+
+.dialog-footer-status {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.dialog-dialog .flex-patch {
+  height: 100%;
+  width: 100%;
+}
+
+#dialog-footer-status-message {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+  transform: translateY(-50%);
+  top: 50%;
+}
+
+.dialog-footer-buttons {
+  text-align: right;
+}
+
+
+.dialog-button {
+  border: 1px solid #81c4dc;
+  background: #81c4dc;
+  color: #fff;
+  border-radius: 2px;
+  min-width: 6em;
+  min-height: 2em;
+  margin: .2em;
+  font-family: inherit;
+  padding: 6px 12px;
+}
+
+.dialog-button:hover {
+  background: #95cee1;
+}
+
+.dialog-button:active {
+  background: #81c4dc;
+}
+
+.dialog-button:last-child {
+  margin-right: 0;
+}

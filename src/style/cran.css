@@ -1,0 +1,85 @@
+
+/* --- chooser ---------------------------------------------------------- */
+
+.chooser-radio, .chooser-checkbox {
+  padding-left: 0em;
+  cursor: default;
+  display: flex;
+  position: relative;
+}
+
+.chooser-radio::before {
+  /*
+  padding: .22em .5em;
+  */
+  padding-right: .5em;
+  overflow: hidden;
+  content: "\25CB";
+  color: #333;
+  font-size: 1.2em;
+  position: relative;
+}
+
+.chooser-radio.chooser-radio-checked::before {
+  content: "\25C9";
+  color: #4285f4;
+}
+
+.chooser-checkbox::before {
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  line-height: 0;
+  position: relative;
+  top: .45em;
+  content: "\2713";
+  margin-right: .6em;
+  font-size: 1.25em;
+  color: transparent;
+
+}
+
+.chooser-checkbox.chooser-checkbox-checked::before {
+  color: #333;
+}
+
+/* --- mirror chooser---------------------------------------------------- */
+
+.mirror-chooser-name {
+  font-size: 1.2em;
+}
+
+.mirror-chooser-host {
+  color: #666;
+}
+
+.mirror-chooser-entry {
+  padding: .5em 1em;
+  display: block;
+}
+
+.vlist-list-entry:nth-child(even) .mirror-chooser-entry {
+  background: #e0f5fc;
+}
+
+/* --- package chooser------------------------------------------------------ */
+
+.package-chooser-name {
+}
+
+.package-chooser-entry {
+  padding: .75em 1em;
+}
+
+.vlist-list-entry:nth-child(even) .package-chooser-entry {
+  background: #e0f5fc;
+}
+
+.package-chooser-entry .chooser-checkbox.disabled {
+  color: #666;
+}
+
+.package-chooser-entry .chooser-checkbox.disabled::before {
+  color: inherit;
+}

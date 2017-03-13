@@ -1,0 +1,74 @@
+
+<!-- markup for CRAN package chooser -->
+
+<style>
+
+  #package-chooser .dialog-header > div {
+    display: flex;
+  }
+  #package-chooser .dialog-header-form {
+    padding-left: 1em;
+    position: relative;
+  }
+  #package-chooser .dialog-header-form input {
+    height: 100%;
+    border: 1px solid #888;
+    border-radius: 2px;
+    margin: 0;
+    padding: 0;
+    padding-left: .5em;
+    top: 0px;
+    position: absolute;
+    font-family: inherit;
+  }
+  #package-chooser .dialog-body {
+    min-height: 10em;
+  }
+  #package-chooser-wait {
+    margin: .5em 1em;
+  }
+
+  #package-chooser {
+    height: 90%;
+    width: 50%;
+  }
+
+</style>
+
+<div id='package-chooser' class='dialog-dialog'>
+  
+  <div class='dialog-header'>
+    <div>
+      <div class='dialog-header-title' data-textcontent-message='AVAILABLE_PACKAGES'>
+        Available Packages
+      </div>
+      <div class='dialog-header-form'>
+        <input type='text' id='package-chooser-filter' placeholder='Filter...' data-placeholder-message='FILTER'>
+      </div>
+    </div>
+  </div>
+
+  <div class='dialog-body'>
+    <div id='package-chooser-wait' data-textcontent-message='LOADING_PACKAGE_LIST'>
+      Loading package list, please wait...
+    </div>
+    <div id='package-chooser-list'>
+    </div>
+  </div>
+  
+  <div class='dialog-footer'>
+    <div class='dialog-split-footer'>
+      <div class='dialog-footer-status'>
+        <div class='flex-patch'>
+          <div id='dialog-footer-status-message'></div>
+        </div>
+      </div>
+      <div class='dialog-footer-buttons'>
+        <button class='dialog-button dialog-button-ok' data-textcontent-message='OK'>OK</button>
+        <button class='dialog-button dialog-button-cancel' data-textcontent-message='CANCEL'>Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+

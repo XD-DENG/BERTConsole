@@ -1,0 +1,31 @@
+
+.shell-progress-bar {
+  width: 30em;
+  border: 1px solid #666;
+  border-radius: 3px;
+  position: relative;
+  margin-left: 2em;
+  margin-top: .25em;
+  margin-bottom: .25em;
+}
+
+.shell-progress-bar-label {
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  text-align: center;
+}
+
+.shell-progress-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #ccc;
+}
+
+
+
+
