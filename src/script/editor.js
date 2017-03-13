@@ -149,6 +149,66 @@ class Editor {
 
       instance.editor = monaco.editor.create(instance.nodes['editor-body'], options );
 
+      instance.editor.addAction({
+
+	      id: 'exec-selected-code',
+        label: Messages.CONTEXT_EXECUTE_SELECTED_CODE,
+        keybindings: [ monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+        keybindingContext: null, // ??
+        contextMenuGroupId: '80_exec',
+        contextMenuOrder: 1,
+
+        // FOR REFERENCE: found this key in editor.main.js (presumably generated from 
+        // source ts somewhere) @ line 44874, see block above it for more keys.  other 
+        // things discovered: precondition is evaluated in some fashion.  == and != work 
+        // for equivalence/inequivalence.  do not use !==.  escape strings.  use && to 
+        // combine terms.
+
+        precondition: "editorLangId=='r'",
+
+        run: function(ed) {
+          let val = ed.getModel().getValueInRange(ed.getSelection());
+          if( val.trim().length ){
+
+            // this may have double-terminated lines (windows style).
+            // convert that before executing.
+
+            let lines = val.split( /\n/ );
+            val = lines.map( function( line ){ return line.trim(); }).join( "\n" );
+            PubSub.publish( "execute-block", val );
+          }
+          return null;
+        }
+
+      });
+
+      instance.editor.addAction({
+
+	      id: 'exec-entire-buffer',
+        label: Messages.CONTEXT_EXECUTE_BUFFEER,
+        keybindings: [ monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+        keybindingContext: null, // ??
+        contextMenuGroupId: '80_exec',
+        contextMenuOrder: 2,
+
+        precondition: "editorLangId=='r'", // see above
+
+        run: function(ed) {
+          let val = ed.getModel().getValue();
+          if( val.trim().length ){
+
+            // this may have double-terminated lines (windows style).
+            // convert that before executing.
+
+            let lines = val.split( /\n/ );
+            val = lines.map( function( line ){ return line.trim(); }).join( "\n" );
+            PubSub.publish( "execute-block", val );
+          }
+          return null;
+        }
+
+      });
+
       instance.editor.onDidChangeCursorPosition( function(e){
         PubSub.publish( "editor-cursor-position-change", e.position );
         if( instance.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
@@ -396,9 +456,8 @@ class Editor {
     this.nodes['editor-info-language'].textContent = //`Language: ${languageAliases[lang]}`;
       Utils.templateString( Messages.LANGUAGE, languageAliases[lang] );
 
-
     PubSub.publish( "editor-cursor-position-change", this.editor.getPosition());
-    
+
     this.editor.focus();
     if( tab.opts.file ) this.fileSettings.activeTab = tab.opts.file;
 

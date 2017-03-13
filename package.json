@@ -1,12 +1,12 @@
 {
   "description": "BERT Console",
   "name": "bert-console",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "shell": "./node_modules/.bin/electron index.js --devtools",
-    "build": "./build.sh"
+    "build": "sh ./build.sh"
   },
   "dependencies": {
     "chokidar": "^1.6.1",

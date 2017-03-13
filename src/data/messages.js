@@ -99,6 +99,11 @@ module.exports = {
     DONT_SAVE: "Don't Save",
     CANCEL: "Cancel",
 
+    // context menu actions
+
+    CONTEXT_EXECUTE_SELECTED_CODE: 'Execute selected code',
+    CONTEXT_EXECUTE_BUFFEER: 'Execute entire file',
+
     // file dialog
 
     R_FILES_PATTERN: 'R Files',
