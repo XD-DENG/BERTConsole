@@ -2,6 +2,5 @@
 bert-console-win32-ia32
 bert-shell-2-settings.json
 build
-ext
 node_modules
 yarn-error.log
