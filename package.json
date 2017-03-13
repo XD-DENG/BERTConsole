@@ -5,7 +5,8 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "shell": "./node_modules/.bin/electron index.js --devtools"
+    "shell": "./node_modules/.bin/electron index.js --devtools",
+    "build": "./build.sh"
   },
   "dependencies": {
     "chokidar": "^1.6.1",
