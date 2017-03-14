@@ -407,6 +407,15 @@ PubSub.subscribe( "menu-click", function( channel, data ){
     CRAN.showPackageChooser(R, settings);
     break;
 
+  case "shell-select-all":
+    shell.select_all();
+    break;
+
+  case "shell-clear-shell":
+    shell.clear();
+    spinner.update();
+    break;
+
   default:
     console.info( data );
     break;
@@ -563,6 +572,12 @@ const init_shell = function(container){
   shell.setOption("matchBrackets", true); // fixme: allow user to disable?
 
   // context menu
+  let menu = createMenu( Utils.clone(ApplicationMenus.ShellContext));
+  container.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    menu.popup(remote.getCurrentWindow());
+  }, false);
+
   /*
   Utils.updateMenu( Settings, MenuTemplates.ShellContext );
   const shellContextMenu = Menu.buildFromTemplate( MenuTemplates.ShellContext );
