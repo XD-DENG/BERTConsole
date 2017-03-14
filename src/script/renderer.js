@@ -4,6 +4,7 @@ const path = require( "path" );
 
 const PubSub = require( "pubsub-js" );
 const Shell = require( "cmjs-shell" );
+const chokidar = require('chokidar');
 
 const {remote, ipcRenderer} = require('electron');
 const {Menu, MenuItem, dialog} = remote;
@@ -430,6 +431,10 @@ PubSub.subscribe( "menu-click", function( channel, data ){
     spinner.update();
     break;
 
+  case "user-stylesheet":
+    editor.open( userStylesheet );
+    break;
+
   default:
     console.info( data );
     break;
@@ -676,6 +681,17 @@ fs.readFile( path.join( __dirname, "../../package.json" ), function( err, data )
 // user stylesheet
 
 Utils.ensureCSS( userStylesheet, { "data-position": -1 });
+
+//let watcher = chokidar.watch( [userStylesheet] );
+let watcher = new chokidar.FSWatcher();
+watcher.add( userStylesheet );
+
+watcher.on( "change", function( file ){
+  if( file === path.basename(userStylesheet)){
+    Utils.ensureCSS( userStylesheet, { "data-position": -1 }, true );
+    Utils.layoutCSS();
+  }
+})
 
 // initialize editor, shell, R connection
 

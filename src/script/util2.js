@@ -101,21 +101,20 @@ class Utils {
   /**
    * ensure that a stylesheet is attached to the document.
    * loads by reference (i.e. link rel) instead of inlining.
+   * 
+   * 
    */
-  static ensureCSS(file, attrs, root){
+  static ensureCSS(file, attrs, force){
 
-    root = root || document.head;
-    if( typeof root === "string" ) root = document.querySelector( root );
-    if( !root ) throw( "invalid root node" );
-
-    let elements = root.querySelectorAll( "link[rel=stylesheet]" );
-    let marker = null;
+    let elementlist = document.head.querySelectorAll( "link[rel=stylesheet]" );
+    let elements = Array.prototype.map.call( elementlist, function(elt){ return elt; });
 
     for( let i = 0; i< elements.length; i++ ){
       let href = elements[i].getAttribute( "href" );
-      if( href === file ) return;
-      let attr = elements[i].getAttribute( "data-position" );
-      if( attr && attr === "last" ) marker = elements[i];
+      if( href === file ){
+        if( force ) elements[i].parentNode.removeChild( elements[i] );
+        else return;
+      }
     }
 
     let link = document.createElement( "link" );
@@ -127,7 +126,8 @@ class Utils {
     }
 
     link.setAttribute( "href", file );
-    root.insertBefore( link, marker );
+    // root.insertBefore( link, marker );
+    document.head.appendChild( link );
 
   }
 
