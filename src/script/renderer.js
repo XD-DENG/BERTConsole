@@ -622,6 +622,13 @@ const init_r = function(){
 
   if( pipename ){ 
     R.init({ pipename: pipename });
+
+    window.addEventListener("beforeunload", function (event) {
+      if( global.__quit || global.allowReload ) return;
+      event.returnValue = false;
+      R.internal( ["hide"], "hide" );
+    });
+
   }
   else {
     Notifier.notify({
