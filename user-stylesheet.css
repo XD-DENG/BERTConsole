@@ -1,8 +1,5 @@
 
-
-
 /** swap left and right (or top and bottom) panels: */
-
 /*
 .split-pane:nth-child(2) { order: 0; }
 .splitter { order: 1; }

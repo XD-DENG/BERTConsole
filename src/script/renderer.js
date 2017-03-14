@@ -684,12 +684,13 @@ Utils.ensureCSS( userStylesheet, { "data-position": -1 });
 
 //let watcher = chokidar.watch( [userStylesheet] );
 let watcher = new chokidar.FSWatcher();
+console.info( "add watch", userStylesheet );
 watcher.add( userStylesheet );
 
 watcher.on( "change", function( file ){
-  if( file === path.basename(userStylesheet)){
+  console.info( "WC", file );
+  if( file === userStylesheet ){ // || file === path.basename(userStylesheet)){
     Utils.ensureCSS( userStylesheet, { "data-position": -1 }, true );
-    Utils.layoutCSS();
   }
 })
 
