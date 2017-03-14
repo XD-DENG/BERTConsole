@@ -191,6 +191,10 @@ class Editor {
         instance.open();
         break;
 
+      case "file-revert":
+        instance.revert(instance.getActiveTab());
+        break;
+
       case "file-close":
         instance.closeTab(instance.getActiveTab());
         break;
@@ -761,6 +765,49 @@ class Editor {
       // ignoreChanges = null;
     })
     
+  }
+
+  /**
+   * 
+   * @param {*} tab 
+   */  
+  revert(tab){
+
+    tab = this.checkIndexTab(tab);
+    if( !tab.opts.file ){
+      console.warn( "Can't revert this tab (not linked to file)" );
+      return;
+    }
+    
+    let instance = this;
+    let active = this.getActiveTab();
+
+    return new Promise( function( resolve, reject ){
+      fs.readFile( tab.opts.file, { encoding: 'utf8' }, function( err, contents ){
+        if( err ){
+          console.error( err );
+          PubSub.publish( "error", { 
+            error: `Error reading file: ${tab.opts.file}`,
+            'original-error': err, 
+            file: file 
+          });
+        }
+        else {
+          tab.opts.model.setValue(contents);
+          
+          tab.opts.dirty = false;
+          tab.opts.baseAVID = tab.opts.model.getAlternativeVersionId();
+          tab.classList.remove( "dirty" );          
+
+          if( tab === active ){
+            instance.dirty = false;
+            instance.baseAVID = tab.opts.baseAVID;
+          }
+
+        }
+        resolve();
+      });
+    });
   }
 
   /**

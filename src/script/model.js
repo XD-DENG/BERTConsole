@@ -172,6 +172,7 @@ class Model {
    * @param {object} o root object (observed)
    * @param {string} key local storage key
    * @param {*} event message name for pubsub or event callback function
+   * @param {boolean} pretty pretty-print json file output
    */
   static createLocalStorageProxy(o, key, event) {
 
@@ -200,7 +201,7 @@ class Model {
    * @param {string} path 
    * @param {*} event name for pubsub or event callback function
    */
-  static createFileStorageProxy(o, path, event){
+  static createFileStorageProxy(o, path, event, pretty){
 
     let saveLock = false;
     let saveTimer = null;
@@ -210,7 +211,7 @@ class Model {
       let actualSave = function(){
         saveLock = true;
         // console.info( "Actual save" );
-        let json = JSON.stringify(data);
+        let json = JSON.stringify(data, undefined, pretty ? 3 : undefined);
         fs.writeFile(path, json, function(err){
           if( err ) console.error( err );
           saveLock = false;

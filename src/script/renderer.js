@@ -58,7 +58,7 @@ let settings = Model.createFileStorageProxy({
     lineNumbers: true,
     statusBar: true
   }
-}, settingsFile, "settings-change" );
+}, settingsFile, "settings-change", true );
 
 window.settings = settings;
 
@@ -769,6 +769,11 @@ PubSub.subscribe( "splitter-resize", function(channel, data){
 
 PubSub.subscribe( "settings-change", function( channel, data ){
   switch( data[0] ){
+
+  case "shell.wrap":
+    shell.setOption("lineWrapping", settings.shell.wrap);
+    spinner.update();
+    return;
 
   case "shell.theme":
     updateShellTheme();
