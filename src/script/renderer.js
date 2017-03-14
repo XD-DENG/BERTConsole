@@ -581,15 +581,6 @@ const init_shell = function(container){
     menu.popup(remote.getCurrentWindow());
   }, false);
 
-  /*
-  Utils.updateMenu( Settings, MenuTemplates.ShellContext );
-  const shellContextMenu = Menu.buildFromTemplate( MenuTemplates.ShellContext );
-  shellContainer.addEventListener('contextmenu', function(e){
-    e.preventDefault();
-    shellContextMenu.popup(remote.getCurrentWindow());
-  }, false);
-  */
-
   // event handlers
   shell.getCM().on( "focus", function(){ PubSub.publish( "focus-event", "shell" );});
 
@@ -689,6 +680,12 @@ window.addEventListener( "keydown", function(e){
       e.preventDefault();
       if( state.focused === "editor" ) shell.focus();
       else editor.focus();
+    }
+    else if( e.code === "F8" ){
+      e.stopPropagation();
+      e.preventDefault();
+      shell.clear();
+      spinner.update();
     }
     // else console.info( e.code );
     return;

@@ -4,11 +4,11 @@ module.exports = {
   // shell context menu
 
   ShellContext: [
-    { label: 'Select All', id: 'shell-select-all' },
+    { label: 'Select All', id: 'shell-select-all', accelerator: "Ctrl+A" },
     { role: 'copy' },
     { role: 'paste' },
     { type: 'separator' },
-    { label: 'Clear Shell', id: 'shell-clear-shell' }
+    { label: 'Clear Shell', id: 'shell-clear-shell', accelerator: "Ctrl+F8" }
   ],
 
   // main menu (menu bar)

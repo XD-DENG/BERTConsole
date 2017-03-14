@@ -117,10 +117,8 @@ class Editor {
     let instance = this;
 
     PubSub.subscribe( "editor-cursor-position-change", function(channel, data){
-      instance.nodes['editor-info-position'].textContent = // `Line ${data.lineNumber} Col ${data.column}`;
+      instance.nodes['editor-info-position'].textContent = 
         Utils.templateString( Messages.LINE_COL, data.lineNumber, data.column );
-
-
     });
 
     PubSub.subscribe( "status-message", function( channel, data ){
@@ -150,6 +148,8 @@ class Editor {
       // to be ok to just ignore it.
 
       instance.editor = monaco.editor.create(instance.nodes['editor-body'], options );
+
+      // window.editor = instance.editor;
 
       instance.editor.addAction({
 
@@ -232,8 +232,8 @@ class Editor {
         let cm = instance.editor.getContribution( "editor.contrib.contextmenu" );
         let ma = cm._getMenuActions();
 
-        window.cm = cm;
-        window.ma = ma;
+//        window.cm = cm;
+//        window.ma = ma;
 
         let menu = new Menu();
 
@@ -242,10 +242,15 @@ class Editor {
             menu.append(new MenuItem({type: "separator"}));
           }
           else {
+
+            // don't call getlabelfor if there's no keybinding, it will throw
+            let kb = cm._keybindingFor( action );
+            let accel = kb ? cm._keybindingService.getLabelFor(kb) : null;
+
             menu.append(new MenuItem({
               label: action.label,
               enabled: action.enabled,
-              accelerator: cm._keybindingService.getLabelFor(cm._keybindingFor( action )),
+              accelerator: accel,
               click: function(){
                 action.run();
               }
@@ -256,6 +261,16 @@ class Editor {
         menu.popup(remote.getCurrentWindow());
 
       });
+
+      //
+      // override default link handling, we want to open in a browser.
+      // FIXME: are there some schemes we want to handle differently?
+      // 
+
+      let linkDetector = instance.editor.getContribution("editor.linkDetector" )
+      linkDetector.openerService.open = function( resource, options ){ 
+        require('electron').shell.openExternal(resource.toString());
+      };
 
       instance.editor.onDidChangeCursorPosition( function(e){
         PubSub.publish( "editor-cursor-position-change", e.position );
