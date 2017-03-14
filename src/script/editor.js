@@ -8,7 +8,7 @@ const PubSub = require( "pubsub-js" );
 // electron
 
 const { remote } = require('electron');
-const dialog = remote.dialog;
+const {Menu, MenuItem, dialog} = remote;
 
 // local
 
@@ -143,6 +143,8 @@ class Editor {
 
     amdRequire(['vs/editor/editor.main'], function() {
 
+      options.contextmenu = false;
+
       // it looks like there's a model created here, but then discarded when 
       // we install our first model.  not 100% sure of this behavior but seems 
       // to be ok to just ignore it.
@@ -206,6 +208,52 @@ class Editor {
           }
           return null;
         }
+
+      });
+
+      /**
+       * show context menu.  we're not using monaco's built-in context menu 
+       * because we want it to be consistent across the editor and the shell.
+       */
+      instance.editor.onContextMenu( function( e ){
+
+        // see editor.main.js @ 72119.  TODO: where do the key accelerators come from?
+
+        // ok, answered.  to get the keybinding (encoded as int), use 
+        // keybinding = cm._keybindingFor( action )
+        // 
+        // you can decode to monaco's representation (shown in the menus) with 
+        // cm._keybindingService.getLabelFor( keybinding )
+        //
+        // so we should be able to translate to electron keybindings.  actually 
+        // we may be able to just pass the translated binding in to electron (but 
+        // will that only work for EN-US?)
+
+        let cm = instance.editor.getContribution( "editor.contrib.contextmenu" );
+        let ma = cm._getMenuActions();
+
+        window.cm = cm;
+        window.ma = ma;
+
+        let menu = new Menu();
+
+        ma.forEach( function( action ){
+          if( action.id === "vs.actions.separator" ){
+            menu.append(new MenuItem({type: "separator"}));
+          }
+          else {
+            menu.append(new MenuItem({
+              label: action.label,
+              enabled: action.enabled,
+              accelerator: cm._keybindingService.getLabelFor(cm._keybindingFor( action )),
+              click: function(){
+                action.run();
+              }
+            }));
+          }
+        });
+
+        menu.popup(remote.getCurrentWindow());
 
       });
 

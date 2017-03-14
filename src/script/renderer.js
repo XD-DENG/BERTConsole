@@ -48,6 +48,9 @@ let settings = Model.createFileStorageProxy({
   shell: {
     theme: "dark",
     resize: true
+  },
+  editor: {
+    theme: "vs"
   }
 }, settingsFile, "settings-change" );
 
