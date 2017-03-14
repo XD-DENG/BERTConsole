@@ -24,7 +24,10 @@ require( "./resize-events.js" );
 let settingsFile = "bert-shell-2-settings.json";
 if( process.env.BERT_SHELL_HOME ) settingsFile = path.join( process.env.BERT_SHELL_HOME, settingsFile );
 
-let R, shell;
+let userStylesheet = "user-stylesheet.css";
+if( process.env.BERT_SHELL_HOME ) userStylesheet = path.join( process.env.BERT_SHELL_HOME, userStylesheet );
+
+let R, shell, package;
 
 /**
  * state object so we stop stuffing crap into the global namespace
@@ -50,14 +53,16 @@ let settings = Model.createFileStorageProxy({
     resize: true
   },
   editor: {
-    theme: "vs"
+    theme: "vs",
+    lineNumbers: true,
+    statusBar: true
   }
 }, settingsFile, "settings-change" );
 
 window.settings = settings;
 
 let split = new Splitter({ 
-  node: document.body, 
+  node: document.getElementById("container"), 
   size: settings.layout.split || [50, 50],
   direction: settings.layout.direction || Splitter.prototype.Direction.HORIZONTAL
 });
@@ -236,13 +241,14 @@ const updateShellTheme = function(){
   if( oldnode ) oldnode.parentElement.removeChild(oldnode);
 
   if( theme && theme !== "default" )
-    //Utils.ensureCSS( path.join( process.env.BERT_SHELL_HOME || "" ,`theme/${theme}.css` ), { 'data-watch': true, 'id': 'shell-theme-node' } ); 
-    Utils.ensureCSS( path.join( __dirname, "../../theme", `${theme}.css` ), { 'data-watch': true, 'id': 'shell-theme-node' }); 
+    Utils.ensureCSS( path.join( __dirname, "../../theme", `${theme}.css` ), { 'data-position': -2, 'id': 'shell-theme-node' }); 
 
   setTimeout( function(){
     shell.setOption("theme", theme);
     shell.refresh();
   }, 1 );
+
+  Utils.layoutCSS();
 
 };
 
@@ -297,6 +303,11 @@ const updateMenu = function(){
         PubSub.publish( "menu-click", {id: "open-recent", file: elt });
       }};
     });
+  }
+
+  if( package ){
+    node = findNode( template, "bert-shell-version" );
+    if( node ) node.label += ` ${package.version}`;
   }
 
   // editor themes
@@ -652,12 +663,28 @@ const init_r = function(){
 
 }
 
+// read package.json
+
+fs.readFile( path.join( __dirname, "../../package.json" ), function( err, data ){
+  if( err ) console.error( "ERR reading package.json", err );
+  else {
+    package = JSON.parse( data );
+    PubSub.publish( "update-menu" );
+  }
+})
+
+// user stylesheet
+
+Utils.ensureCSS( userStylesheet, { "data-position": -1 });
+
 // initialize editor, shell, R connection
 
-let editorOptions = {};
-if( settings.editor && settings.editor.theme ) editorOptions.theme = settings.editor.theme;
+let editorOptions = Utils.clone(settings.editor || {}); // fixme: defaults here?
 
-editor.init( split.panes[0], editorOptions );
+editor.init( split.panes[0], editorOptions ).then( function(){
+  Utils.layoutCSS();
+})
+
 init_shell( split.panes[1] );
 init_r();
 
@@ -726,17 +753,13 @@ PubSub.subscribe( "splitter-resize", function(channel, data){
 PubSub.subscribe( "settings-change", function( channel, data ){
   switch( data[0] ){
 
-  case "editor.theme":
-    editor.setTheme(settings.editor.theme);
-    break;
-
   case "shell.theme":
     updateShellTheme();
-    break;
+    return;
 
   case "layout.direction":
     updateLayout( settings.layout.direction, true  );
-    break;
+    return;
 
   case "shell.hide":
     split.setVisible( 1, !settings.shell.hide );
@@ -745,7 +768,7 @@ PubSub.subscribe( "settings-change", function( channel, data ){
     resizeShell();
     editor.layout();
     spinner.update();
-    break;
+    return;
 
   case "editor.hide":
     split.setVisible( 0, !settings.editor.hide );
@@ -754,10 +777,21 @@ PubSub.subscribe( "settings-change", function( channel, data ){
     resizeShell();
     editor.layout();
     spinner.update();
-    break;
+    return;
 
   }
+
+  let m = data[0].match( /editor\.(.*)$/ );
+  if( m ){
+    let opts = {};
+    opts[m[1]] = Utils.dereference_get( settings, data[0] );
+    editor.updateOptions(opts);
+    Utils.layoutCSS(); // in case the editor monkeys around with it
+    return;
+  }
+
   console.info( data );
+
 });
 
 if( settings.editor && settings.editor.hide ) split.setVisible( 0, false );

@@ -76,6 +76,29 @@ class Utils {
   }
 
   /**
+   * enforce order in our linked stylesheets.  both we and monaco 
+   * insert style elements, somewhat at random.  this will enforce 
+   * that ours come last, and in the correct order.
+   */
+  static layoutCSS(){
+
+    let nodelist = document.querySelectorAll( "link[data-position]" );
+    let nodes = Array.prototype.map.call( nodelist, function(node){ 
+      node.parentElement.removeChild(node);
+      return node; 
+    });
+
+    nodes.sort( function( a, b ){
+      return Number(a.getAttribute("data-position")) - Number(b.getAttribute("data-position"));
+    })
+
+    nodes.forEach( function( node ){
+      document.head.appendChild(node);
+    })
+
+  }
+
+  /**
    * ensure that a stylesheet is attached to the document.
    * loads by reference (i.e. link rel) instead of inlining.
    */

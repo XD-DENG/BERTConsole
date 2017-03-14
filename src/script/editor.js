@@ -88,6 +88,33 @@ class Editor {
   }
 
   /**
+   * handle local options, that we can deal with directly.  these are also 
+   * removed from the object so they don't get passed through.
+   * 
+   * @param {object} options 
+   */
+  handleLocalOptions(options){
+
+    let handle = function(key, func){
+      if( typeof options[key] === "undefined" ) return;
+      if( func ) func.call( this, options[key] );
+      delete options[key];
+    }.bind(this);
+
+    // this one we just drop
+    handle( "hide" );
+
+    // the local layout function will check if editor exists 
+    handle( "statusBar", function(val){
+      let footer = this.nodes['editor-footer'];
+      if( val ) footer.classList.remove( "hide" );
+      else footer.classList.add( "hide" );
+      this.layout();
+    });
+
+  }
+
+  /**
    * initialize the editor component and UI.  
    */
   init(container, options){
@@ -139,230 +166,7 @@ class Editor {
       }
     });
 
-    amdRequire(['vs/editor/editor.main'], function() {
-
-      options.contextmenu = false;
-
-      // it looks like there's a model created here, but then discarded when 
-      // we install our first model.  not 100% sure of this behavior but seems 
-      // to be ok to just ignore it.
-
-      instance.editor = monaco.editor.create(instance.nodes['editor-body'], options );
-
-      // window.editor = instance.editor;
-
-      instance.editor.addAction({
-
-	      id: 'exec-selected-code',
-        label: Messages.CONTEXT_EXECUTE_SELECTED_CODE,
-        keybindings: [ monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
-        keybindingContext: null, // ??
-        contextMenuGroupId: '80_exec',
-        contextMenuOrder: 1,
-
-        // FOR REFERENCE: found this key in editor.main.js (presumably generated from 
-        // source ts somewhere) @ line 44874, see block above it for more keys.  other 
-        // things discovered: precondition is evaluated in some fashion.  == and != work 
-        // for equivalence/inequivalence.  do not use !==.  escape strings.  use && to 
-        // combine terms.
-
-        precondition: "editorLangId=='r'",
-
-        run: function(ed) {
-          let val = ed.getModel().getValueInRange(ed.getSelection());
-          if( val.trim().length ){
-
-            // this may have double-terminated lines (windows style).
-            // convert that before executing.
-
-            let lines = val.split( /\n/ );
-            val = lines.map( function( line ){ return line.trim(); }).join( "\n" );
-            PubSub.publish( "execute-block", val );
-          }
-          return null;
-        }
-
-      });
-
-      instance.editor.addAction({
-
-	      id: 'exec-entire-buffer',
-        label: Messages.CONTEXT_EXECUTE_BUFFEER,
-        keybindings: [ monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
-        keybindingContext: null, // ??
-        contextMenuGroupId: '80_exec',
-        contextMenuOrder: 2,
-
-        precondition: "editorLangId=='r'", // see above
-
-        run: function(ed) {
-          let val = ed.getModel().getValue();
-          if( val.trim().length ){
-
-            // this may have double-terminated lines (windows style).
-            // convert that before executing.
-
-            let lines = val.split( /\n/ );
-            val = lines.map( function( line ){ return line.trim(); }).join( "\n" );
-            PubSub.publish( "execute-block", val );
-          }
-          return null;
-        }
-
-      });
-
-      /**
-       * show context menu.  we're not using monaco's built-in context menu 
-       * because we want it to be consistent across the editor and the shell.
-       */
-      instance.editor.onContextMenu( function( e ){
-
-        // see editor.main.js @ 72119.  TODO: where do the key accelerators come from?
-
-        // ok, answered.  to get the keybinding (encoded as int), use 
-        // keybinding = cm._keybindingFor( action )
-        // 
-        // you can decode to monaco's representation (shown in the menus) with 
-        // cm._keybindingService.getLabelFor( keybinding )
-        //
-        // so we should be able to translate to electron keybindings.  actually 
-        // we may be able to just pass the translated binding in to electron (but 
-        // will that only work for EN-US?)
-
-        let cm = instance.editor.getContribution( "editor.contrib.contextmenu" );
-        let ma = cm._getMenuActions();
-
-//        window.cm = cm;
-//        window.ma = ma;
-
-        let menu = new Menu();
-
-        ma.forEach( function( action ){
-          if( action.id === "vs.actions.separator" ){
-            menu.append(new MenuItem({type: "separator"}));
-          }
-          else {
-
-            // don't call getlabelfor if there's no keybinding, it will throw
-            let kb = cm._keybindingFor( action );
-            let accel = kb ? cm._keybindingService.getLabelFor(kb) : null;
-
-            menu.append(new MenuItem({
-              label: action.label,
-              enabled: action.enabled,
-              accelerator: accel,
-              click: function(){
-                action.run();
-              }
-            }));
-          }
-        });
-
-        menu.popup(remote.getCurrentWindow());
-
-      });
-
-      //
-      // override default link handling, we want to open in a browser.
-      // FIXME: are there some schemes we want to handle differently?
-      // 
-
-      let linkDetector = instance.editor.getContribution("editor.linkDetector" )
-      linkDetector.openerService.open = function( resource, options ){ 
-        require('electron').shell.openExternal(resource.toString());
-      };
-
-      instance.editor.onDidChangeCursorPosition( function(e){
-        PubSub.publish( "editor-cursor-position-change", e.position );
-        if( instance.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
-          let model = instance.editor.getModel();
-          if( model.getAlternativeVersionId() === instance.baseAVID ){
-            let active = instance.getActiveTab();
-            active.opts.dirty = false;
-            instance.dirty = false;
-            active.classList.remove("dirty");
-          }
-        }
-      });
-
-      instance.editor.onDidChangeModelContent( function(e){
-        if( instance.dirty ) return;
-        instance.dirty = true;
-        let active = instance.getActiveTab();
-        if( !active.opts ) active.opts = {};
-        active.opts.dirty = true;
-        active.classList.add( "dirty" );
-      });
-
-      /**
-       * this only happens when you change the extension on a save.  switching 
-       * models to a model with a different language does _not_ trigger this event.
-       */
-      instance.editor.onDidChangeModelLanguage( function(e){
-        instance.nodes['editor-info-language'].textContent = // `Language: ${languageAliases[e.newLanguage]}`;
-          Utils.templateString( Messages.LANGUAGE, languageAliases[e.newLanguage] );
-
-      });
-
-      /**
-       * focus event: we want to indicate which panel has focus
-       */
-      instance.editor.onDidFocusEditor( function(e){
-        PubSub.publish( "focus-event", "editor" );
-      });
-
-      /**
-       * map extensions -> languages, cache aliases.  add some 
-       * extensions monaco (monarch?) doesn't include.
-       */
-      monaco.languages.getLanguages().forEach( function( lang ){
-        lang.extensions.forEach( function( ext ){
-          languageExtensions[ext.toLowerCase()] = lang.id;
-        })
-        languageAliases[lang.id] = lang.aliases[0];
-      });
-      languageExtensions['.rscript'] = 'r';
-      languageExtensions['.rsrc'] = 'r';
-
-      // if we are loading open files, that's async; if not, we can just 
-      // create a blank buffer and continue.  note the placeholder is there 
-      // to make it lay out properly before we've added any tabs.  the 
-      // alternative is to add at least one tab, then call layout().  that 
-      // flashes a bit, though.
-
-      let removePlaceholder = function(){
-        let placeholder = instance.nodes['placeholder-tab'];
-        placeholder.parentNode.removeChild( placeholder );
-        delete instance.nodes['placeholder-tab'];
-      }
-
-      if( instance.fileSettings.openFiles && instance.fileSettings.openFiles.length ){
-        let files = instance.fileSettings.openFiles.slice(0);
-        let loadNext = function(){
-          return new Promise( function( resolve, reject ){
-            let file = files.shift();
-            instance.load( file, true, true ).then( function(){
-              if( files.length ){
-                loadNext().then( function(){
-                  resolve();
-                })
-              }
-              else resolve();
-            })
-          });
-        }
-        loadNext().then( function(){
-          removePlaceholder();
-          instance.selectTab(instance.fileSettings.activeTab || 0);
-        })
-      }
-      else {
-        console.info( "no open files; opening blank document");
-        instance.addTab({ value: "" }, true);
-        removePlaceholder();
-      }
-
-    });
+    // FIXME: the next 3 can move
 
     PubSub.subscribe( "splitter-drag", function(){
       instance.layout();
@@ -395,6 +199,239 @@ class Editor {
         instance.addTab({ value: "" });
         break;
       }
+    });
+
+    this.handleLocalOptions(options);
+
+    return new Promise( function( resolve, reject ){
+
+      amdRequire(['vs/editor/editor.main'], function() {
+
+        options.contextmenu = false; // always
+
+        // it looks like there's a model created here, but then discarded when 
+        // we install our first model.  not 100% sure of this behavior but seems 
+        // to be ok to just ignore it.
+
+        instance.editor = monaco.editor.create(instance.nodes['editor-body'], options );
+
+        // window.editor = instance.editor;
+
+        instance.editor.addAction({
+
+          id: 'exec-selected-code',
+          label: Messages.CONTEXT_EXECUTE_SELECTED_CODE,
+          keybindings: [ monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+          keybindingContext: null, // ??
+          contextMenuGroupId: '80_exec',
+          contextMenuOrder: 1,
+
+          // FOR REFERENCE: found this key in editor.main.js (presumably generated from 
+          // source ts somewhere) @ line 44874, see block above it for more keys.  other 
+          // things discovered: precondition is evaluated in some fashion.  == and != work 
+          // for equivalence/inequivalence.  do not use !==.  escape strings.  use && to 
+          // combine terms.
+
+          precondition: "editorLangId=='r'",
+
+          run: function(ed) {
+            let val = ed.getModel().getValueInRange(ed.getSelection());
+            if( val.trim().length ){
+
+              // this may have double-terminated lines (windows style).
+              // convert that before executing.
+
+              let lines = val.split( /\n/ );
+              val = lines.map( function( line ){ return line.trim(); }).join( "\n" );
+              PubSub.publish( "execute-block", val );
+            }
+            return null;
+          }
+
+        });
+
+        instance.editor.addAction({
+
+          id: 'exec-entire-buffer',
+          label: Messages.CONTEXT_EXECUTE_BUFFEER,
+          keybindings: [ monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+          keybindingContext: null, // ??
+          contextMenuGroupId: '80_exec',
+          contextMenuOrder: 2,
+
+          precondition: "editorLangId=='r'", // see above
+
+          run: function(ed) {
+            let val = ed.getModel().getValue();
+            if( val.trim().length ){
+
+              // this may have double-terminated lines (windows style).
+              // convert that before executing.
+
+              let lines = val.split( /\n/ );
+              val = lines.map( function( line ){ return line.trim(); }).join( "\n" );
+              PubSub.publish( "execute-block", val );
+            }
+            return null;
+          }
+
+        });
+
+        /**
+         * show context menu.  we're not using monaco's built-in context menu 
+         * because we want it to be consistent across the editor and the shell.
+         */
+        instance.editor.onContextMenu( function( e ){
+
+          // see editor.main.js @ 72119.  TODO: where do the key accelerators come from?
+
+          // ok, answered.  to get the keybinding (encoded as int), use 
+          // keybinding = cm._keybindingFor( action )
+          // 
+          // you can decode to monaco's representation (shown in the menus) with 
+          // cm._keybindingService.getLabelFor( keybinding )
+          //
+          // so we should be able to translate to electron keybindings.  actually 
+          // we may be able to just pass the translated binding in to electron (but 
+          // will that only work for EN-US?)
+
+          let cm = instance.editor.getContribution( "editor.contrib.contextmenu" );
+          let ma = cm._getMenuActions();
+
+  //        window.cm = cm;
+  //        window.ma = ma;
+
+          let menu = new Menu();
+
+          ma.forEach( function( action ){
+            if( action.id === "vs.actions.separator" ){
+              menu.append(new MenuItem({type: "separator"}));
+            }
+            else {
+
+              // don't call getlabelfor if there's no keybinding, it will throw
+              let kb = cm._keybindingFor( action );
+              let accel = kb ? cm._keybindingService.getLabelFor(kb) : null;
+
+              menu.append(new MenuItem({
+                label: action.label,
+                enabled: action.enabled,
+                accelerator: accel,
+                click: function(){
+                  action.run();
+                }
+              }));
+            }
+          });
+
+          menu.popup(remote.getCurrentWindow());
+
+        });
+
+        //
+        // override default link handling, we want to open in a browser.
+        // FIXME: are there some schemes we want to handle differently?
+        // 
+
+        let linkDetector = instance.editor.getContribution("editor.linkDetector" )
+        linkDetector.openerService.open = function( resource, options ){ 
+          require('electron').shell.openExternal(resource.toString());
+        };
+
+        instance.editor.onDidChangeCursorPosition( function(e){
+          PubSub.publish( "editor-cursor-position-change", e.position );
+          if( instance.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
+            let model = instance.editor.getModel();
+            if( model.getAlternativeVersionId() === instance.baseAVID ){
+              let active = instance.getActiveTab();
+              active.opts.dirty = false;
+              instance.dirty = false;
+              active.classList.remove("dirty");
+            }
+          }
+        });
+
+        instance.editor.onDidChangeModelContent( function(e){
+          if( instance.dirty ) return;
+          instance.dirty = true;
+          let active = instance.getActiveTab();
+          if( !active.opts ) active.opts = {};
+          active.opts.dirty = true;
+          active.classList.add( "dirty" );
+        });
+
+        /**
+         * this only happens when you change the extension on a save.  switching 
+         * models to a model with a different language does _not_ trigger this event.
+         */
+        instance.editor.onDidChangeModelLanguage( function(e){
+          instance.nodes['editor-info-language'].textContent = // `Language: ${languageAliases[e.newLanguage]}`;
+            Utils.templateString( Messages.LANGUAGE, languageAliases[e.newLanguage] );
+
+        });
+
+        /**
+         * focus event: we want to indicate which panel has focus
+         */
+        instance.editor.onDidFocusEditor( function(e){
+          PubSub.publish( "focus-event", "editor" );
+        });
+
+        /**
+         * map extensions -> languages, cache aliases.  add some 
+         * extensions monaco (monarch?) doesn't include.
+         */
+        monaco.languages.getLanguages().forEach( function( lang ){
+          lang.extensions.forEach( function( ext ){
+            languageExtensions[ext.toLowerCase()] = lang.id;
+          })
+          languageAliases[lang.id] = lang.aliases[0];
+        });
+        languageExtensions['.rscript'] = 'r';
+        languageExtensions['.rsrc'] = 'r';
+
+        // if we are loading open files, that's async; if not, we can just 
+        // create a blank buffer and continue.  note the placeholder is there 
+        // to make it lay out properly before we've added any tabs.  the 
+        // alternative is to add at least one tab, then call layout().  that 
+        // flashes a bit, though.
+
+        let removePlaceholder = function(){
+          let placeholder = instance.nodes['placeholder-tab'];
+          placeholder.parentNode.removeChild( placeholder );
+          delete instance.nodes['placeholder-tab'];
+        }
+
+        if( instance.fileSettings.openFiles && instance.fileSettings.openFiles.length ){
+          let files = instance.fileSettings.openFiles.slice(0);
+          let loadNext = function(){
+            return new Promise( function( resolve, reject ){
+              let file = files.shift();
+              instance.load( file, true, true ).then( function(){
+                if( files.length ){
+                  loadNext().then( function(){
+                    resolve();
+                  })
+                }
+                else resolve();
+              })
+            });
+          }
+          loadNext().then( function(){
+            removePlaceholder();
+            instance.selectTab(instance.fileSettings.activeTab || 0);
+          })
+        }
+        else {
+          console.info( "no open files; opening blank document");
+          instance.addTab({ value: "" }, true);
+          removePlaceholder();
+        }
+
+        resolve();
+
+      });
+
     });
 
   }
@@ -610,11 +647,14 @@ class Editor {
   }
 
   /**
-   * API method: set theme
+   * API method: update options (pass through).  there may also be some local options 
+   * we handle directly (and do not pass through).
+   * 
    * @param {string} theme 
    */
-  setTheme( theme ){
-    this.editor.updateOptions({ theme: theme });
+  updateOptions(opts){
+    this.handleLocalOptions(opts);
+    this.editor.updateOptions(opts);
   }
 
   /**

@@ -17,6 +17,25 @@ body {
   overflow: hidden;
 }
 
+#container, #background {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+}
+
+#background:after {
+  content: "there is nothing here";
+  text-align: center;
+  width: 100%;
+  display: block;
+  height: 100%;
+  top: 40%;
+  position: absolute;
+  font-size: 5em;
+  color: #ddd;
+}
 
 /* --- slight modification to the defaults ------------------------------ */
 

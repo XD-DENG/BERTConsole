@@ -151,13 +151,11 @@ module.exports = {
               id: "editor-theme",
               label: "Editor Theme"
             },
-            /*
             {
               label: "Show Line Numbers",
               type: "checkbox",
-              setting: "editor.CodeMirror.lineNumbers"
+              setting: "editor.lineNumbers"
             },
-            */
             {
               label: "Show Status Bar",
               type: "checkbox",
