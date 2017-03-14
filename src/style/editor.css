@@ -11,6 +11,9 @@
 #editor-header {
   display: flex;
   flex-direction: row;
+}
+
+#editor-header {
   background: #eee;
 }
 
@@ -33,7 +36,9 @@
 }
 
 .editor-tab .label {
+  /*
   color: #888;
+  */
   position: relative;
   top: 50%;
   transform: translateY(-50%);
@@ -91,7 +96,7 @@
 #editor-footer {
   background: #eee;
   border-top: 1px dotted #ccc;
-  margin-top: 1px;
+  margin-top: 0px;
   display: flex;
   color: #333;
   font-size: .9em;
@@ -124,4 +129,55 @@
   text-align: left;
 }
 
+/* --- editor theming --- */
+
+/* 
+   this set handles the default built-in editor themes.  if we add any
+   more themes, presumably we can wrap up these elements with them.
+   
+ */
+
+#editor-header.vs-dark, #editor-header.hc-black  {
+  background: #444;
+}
+
+.vs-dark .editor-tab.active {
+  background: #1e1e1e;
+}
+
+.hc-black .editor-tab.active {
+  background: #000;
+} 
+
+.vs-dark .editor-tab.dirty .tab-icon:after,
+  .vs-dark .editor-tab.active .tab-icon:after, 
+  .vs-dark .editor-tab:hover .tab-icon:after {
+  color: #bbb;
+}
+
+.hc-black .editor-tab.dirty .tab-icon:after,
+  .hc-black .editor-tab.active .tab-icon:after, 
+  .hc-black .editor-tab:hover .tab-icon:after {
+  color: #fff;
+}
+
+#editor-footer.vs-dark {
+  background: #444;
+  color: #bbb;
+  border-top-color: #666;
+}
+
+#editor-footer.vs-dark > div {
+  border-color: transparent;
+}
+
+#editor-footer.hc-black  {
+  background: #444;
+  color: #fff;
+  border-top-color: #666;
+}
+
+#editor-footer.hc-black > div {
+  border-color: transparent;
+}
 

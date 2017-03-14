@@ -43,6 +43,7 @@ body {
 	font-family: consolas;
 	font-size: 14.25px;
   height: 100%;
+  padding-left: .25em; /* seems a little cramped otherwise */
 }
 
 .CodeMirror-gutters {

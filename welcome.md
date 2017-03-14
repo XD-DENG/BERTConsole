@@ -9,9 +9,8 @@ A couple of key things to know:
    one file in there: `functions.R`. To add new functions to Excel,
    either edit that file or add a new file to the startup folder.
    
- * Any time you add or change a file in the startup folder, BERT 
-   will reload it automatically. You can watch other files and 
-   directories as well; see the docs on watching files.
+ * Any time you add a new file or change a file in the startup 
+   folder, BERT will reload it automatically. 
 
  * The R shell is "live" and connected to Excel -- see the docs on 
    Talking to Excel from R, and the Excel Scripting (COM) Interface.
@@ -34,3 +33,4 @@ Cheers,
 [1]: https://microsoft.github.io/monaco-editor/
 [2]: https://codemirror.net/
 [3]: https://electron.atom.io/
+

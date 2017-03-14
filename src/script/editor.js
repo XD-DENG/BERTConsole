@@ -115,6 +115,28 @@ class Editor {
   }
 
   /**
+   * we're hijacking the monaco theme to decorate the rest of the editor 
+   * (tabs and status bar).  possibly the notifications as well?
+   * this gets called if the option is set (runtime) as well as ALWAYS 
+   * at startup to set default.
+   * 
+   * @param {*} theme 
+   */
+  _updateEditorTheme( theme ){
+
+    theme = "monaco-editor " + (theme || "vs"); // default
+
+    // FIXME: currently these two nodes don't have classes attached 
+    // to them, so we can just set.  but if we start adding classes 
+    // we'll have to do some work.
+
+    this.nodes['editor-header'].className = theme;
+    this.nodes['editor-footer'].className = theme;
+
+  }
+
+
+  /**
    * initialize the editor component and UI.  
    */
   init(container, options){
@@ -205,7 +227,8 @@ class Editor {
       }
     });
 
-    this.handleLocalOptions(options);
+    this.handleLocalOptions( options );
+    this._updateEditorTheme( options.theme );
 
     return new Promise( function( resolve, reject ){
 
@@ -659,6 +682,7 @@ class Editor {
   updateOptions(opts){
     this.handleLocalOptions(opts);
     this.editor.updateOptions(opts);
+    if( typeof opts.theme !== "undefined" ) this._updateEditorTheme( opts.theme );
   }
 
   /**
@@ -778,7 +802,7 @@ class Editor {
       console.warn( "Can't revert this tab (not linked to file)" );
       return;
     }
-    
+
     let instance = this;
     let active = this.getActiveTab();
 
