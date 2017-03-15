@@ -712,12 +712,12 @@ window.addEventListener( "keydown", function(e){
     if( e.code === "PageUp" ){
       e.stopPropagation();
       e.preventDefault();
-      editor.selectTab({ delta: -1 });
+      editor.switchTab(-1);
     }
     else if( e.code === "PageDown" ){
       e.stopPropagation();
       e.preventDefault();
-      editor.selectTab({ delta: 1 });
+      editor.switchTab(1);
     }
     else if( e.code === "KeyT" && e.shiftKey ){
       e.stopPropagation();

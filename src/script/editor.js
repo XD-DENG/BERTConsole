@@ -62,29 +62,16 @@ class Editor {
     this.nodes = null;
     this.closedTabs = [];
 
-    /**
-     * the dirty flag is a local flag used to prevent unnecessary 
-     * lookups any time the content changes.  once set, it stays 
-     * set (and shortcuts behavior) until it's explicitly un-set.  
-     */
-    this.dirty = false;
+    // we keep a reference to the active tab.  older versions 
+    // kept calling methods to get this, easier to just hold 
+    // on to it.
 
-    /**
-     * alternate version IDs are used to track changes and support 
-     * undo, so we can undo back to clean state.
-     */
-    this.baseAVID = 0;
+    this._activeTab = null;
 
     this.fileSettings = Model.createLocalStorageProxy({
       recentFiles: []
     }, "file-settings", "file-settings-update" );
     window.model = this.fileSettings;
-
-    /*
-    PubSub.subscribe( "file-settings-update", function( channel, data ){
-      console.info( "MU", data );
-    })
-    */
 
   }
 
@@ -94,7 +81,7 @@ class Editor {
    * 
    * @param {object} options 
    */
-  handleLocalOptions(options){
+  _handleLocalOptions(options){
 
     let handle = function(key, func){
       if( typeof options[key] === "undefined" ) return;
@@ -181,8 +168,8 @@ class Editor {
       while( node && node.className ){
         if( node.className.match( /tab-icon/ )) close = true;
         if( node.className.match( /editor-tab/ )){
-          if( close ) instance.closeTab(node);
-          else instance.selectTab(node);
+          if( close ) instance._closeTab(node);
+          else instance._selectTab(node);
           return;
         }
         node = node.parentNode;
@@ -203,32 +190,32 @@ class Editor {
       if( data ) switch( data.id ){
 
       case "file-save-as":
-        instance.save(instance.getActiveTab(), true);
+        instance._save(instance._activeTab, true);
         break;
 
       case "file-save":
-        instance.save(instance.getActiveTab());
+        instance._save(instance._activeTab);
         break;
 
       case "file-open":
         instance.open();
         break;
 
-      case "file-revert":
-        instance.revert(instance.getActiveTab());
+      case "file-_revert":
+        instance._revert(instance._activeTab);
         break;
 
       case "file-close":
-        instance.closeTab(instance.getActiveTab());
+        instance._closeTab(instance._activeTab);
         break;
 
       case "file-new":
-        instance.addTab({ value: "" });
+        instance._addTab({ value: "" });
         break;
       }
     });
 
-    this.handleLocalOptions( options );
+    this._handleLocalOptions( options );
     this._updateEditorTheme( options.theme );
 
     return new Promise( function( resolve, reject ){
@@ -368,24 +355,19 @@ class Editor {
 
         instance.editor.onDidChangeCursorPosition( function(e){
           PubSub.publish( "editor-cursor-position-change", e.position );
-          if( instance.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
+          if( instance._activeTab && instance._activeTab.opts.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
             let model = instance.editor.getModel();
-            if( model.getAlternativeVersionId() === instance.baseAVID ){
-              let active = instance.getActiveTab();
-              active.opts.dirty = false;
-              instance.dirty = false;
-              active.classList.remove("dirty");
+            if( model.getAlternativeVersionId() === instance._activeTab.opts.baseAVID ){
+              instance._activeTab.opts.dirty = false;
+              instance._activeTab.classList.remove("dirty");
             }
           }
         });
 
         instance.editor.onDidChangeModelContent( function(e){
-          if( instance.dirty ) return;
-          instance.dirty = true;
-          let active = instance.getActiveTab();
-          if( !active.opts ) active.opts = {};
-          active.opts.dirty = true;
-          active.classList.add( "dirty" );
+          if( instance._activeTab.opts.dirty ) return;
+          instance._activeTab.opts.dirty = true;
+          instance._activeTab.classList.add( "dirty" );
         });
 
         /**
@@ -435,7 +417,7 @@ class Editor {
           let loadNext = function(){
             return new Promise( function( resolve, reject ){
               let file = files.shift();
-              instance.load( file, true, true ).then( function(){
+              instance._load( file, true, true ).then( function(){
                 if( files.length ){
                   loadNext().then( function(){
                     resolve();
@@ -447,12 +429,12 @@ class Editor {
           }
           loadNext().then( function(){
             removePlaceholder();
-            instance.selectTab(instance.fileSettings.activeTab || 0);
+            instance._selectTab(instance.fileSettings.activeTab || 0);
           })
         }
         else {
           console.info( "no open files; opening blank document");
-          instance.addTab({ value: "" }, true);
+          instance._addTab({ value: "" }, true);
           removePlaceholder();
         }
 
@@ -464,6 +446,9 @@ class Editor {
 
   }
 
+  /**
+   * API method: update editor UI layout.  call this on resize.
+   */
   layout(){
 
     if( !this.editor ) return;
@@ -487,7 +472,7 @@ class Editor {
    * 
    * @param {*} tab 
    */
-  checkIndexTab(tab){
+  _checkIndexTab(tab){
     if( typeof tab === "number" ){
       let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
       return tab >= 0 && tabs.length > tab ? tabs[tab] : tabs[0];
@@ -511,12 +496,13 @@ class Editor {
 
   /**
    * convenience method, get the active tab (as reference)
-   */
-  getActiveTab(){
+   * /
+  _getActiveTab(){
     return this.nodes['editor-header'].querySelector( ".editor-tab.active" );
   }
+  */
 
-  uncloseTab(tab){
+  _uncloseTab(tab){
     if( !this.closedTabs.length ){
       console.warn( "Unclose tab: nothing on stack" );
       return;
@@ -528,9 +514,9 @@ class Editor {
    * 
    * @param {*} tab reference or index
    */
-  closeTab(tab){
+  _closeTab(tab){
 
-    tab = this.checkIndexTab(tab);
+    tab = this._checkIndexTab(tab);
 
     // FIXME: unsaved changes?
     if( tab.opts.dirty ){
@@ -540,8 +526,7 @@ class Editor {
     // for unclosing. FIXME: cap?
     if( tab.opts.file ) this.closedTabs.unshift( tab.opts.file );
 
-    let active = this.getActiveTab();
-    if( active === tab ){
+    if( this._activeTab === tab ){
 
       // if this is the active tab, select the _next_ tab, if there's no next 
       // tab select the _previous_ tab, if this is the only tab add a new empty tab.
@@ -553,8 +538,8 @@ class Editor {
         while( next && (!next.className || !next.className.match( /editor-tab/ ))) next = next.previousSibling;
       }
 
-      if( next ) this.selectTab(next);
-      else this.addTab({ value: "" });
+      if( next ) this._selectTab(next);
+      else this._addTab({ value: "" });
 
     }
 
@@ -565,39 +550,44 @@ class Editor {
     if( tab.opts.model ) tab.opts.model.dispose();
 
     // update
-    this.updateOpenFiles();
+    this._updateOpenFiles();
 
+  }
+
+  /**
+   * API method for switching tabs; this one expects a delta.  I wanted 
+   * to (theoretically) limit access to the selectTab function.
+   */
+  switchTab( delta ){
+    this._selectTab({ delta: delta });
   }
 
   /**
    * 
    * @param {*} tab reference or index
    */
-  selectTab(tab){
+  _selectTab(tab){
 
-    tab = this.checkIndexTab(tab);
+    tab = this._checkIndexTab(tab);
 
-    let active = this.getActiveTab();
-    if( active ){
+    // click active tab? do nothing
+    if( this._activeTab === tab ) return;
 
-      // click active tab? do nothing
-      if( active === tab ) return;
-
-      // save state
-      if( active.opts ) active.opts.state = this.editor.saveViewState();
-
-      active.classList.remove( "active" );
+    // save state
+    if( this._activeTab ){
+      this._activeTab.opts.state = this.editor.saveViewState();
+      this._activeTab.classList.remove( "active" );
     }
 
     tab.classList.add( "active" );
     this.editor.setModel(tab.opts.model);
     if( tab.opts.state ) this.editor.restoreViewState(tab.opts.state);
 
-    this.dirty = !!tab.opts.dirty;
-    this.baseAVID = tab.opts.baseAVID || 1;
+    this._activeTab = tab;
+    tab.opts.baseAVID = tab.opts.baseAVID;
 
     let lang = tab.opts.model.getLanguageIdentifier().language;
-    this.nodes['editor-info-language'].textContent = //`Language: ${languageAliases[lang]}`;
+    this.nodes['editor-info-language'].textContent = 
       Utils.templateString( Messages.LANGUAGE, languageAliases[lang] );
 
     PubSub.publish( "editor-cursor-position-change", this.editor.getPosition());
@@ -620,7 +610,11 @@ class Editor {
    * @param {*} toll 
    * @param {*} model 
    */
-  addTab(opts, toll, model){
+  _addTab(opts, toll, model){
+
+    // UPDATE: there's never a tab without an opts and there's 
+    // always an opts.baseAVID (defaults to 1).  I don't want 
+    // everyone to test on these values.
 
     opts = opts || {};
 
@@ -646,17 +640,19 @@ class Editor {
     // create a model
 
     opts.model = model || monaco.editor.createModel(opts.value, lang);  
+    opts.baseAVID = opts.model.getAlternativeVersionId();
+
     tab.opts = opts;
     this.nodes['editor-header'].appendChild(tab);
 
     if( !toll ){
-      this.selectTab(tab);
-      this.updateOpenFiles();
+      this._selectTab(tab);
+      this._updateOpenFiles();
     }
 
   }
 
-  updateOpenFiles(){
+  _updateOpenFiles(){
     let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
     let files = Array.prototype.map.call( tabs, function( tab ){
       if( tab.opts && tab.opts.file ){
@@ -666,7 +662,7 @@ class Editor {
     this.fileSettings.openFiles = files.filter( function( f ){ return f; });
   }
 
-  updateRecentFiles(file){
+  _updateRecentFiles(file){
 
     /*
     // if this already exists in the list, remove it
@@ -697,7 +693,7 @@ class Editor {
    * @param {string} theme 
    */
   updateOptions(opts){
-    this.handleLocalOptions(opts);
+    this._handleLocalOptions(opts);
     this.editor.updateOptions(opts);
     if( typeof opts.theme !== "undefined" ) this._updateEditorTheme( opts.theme );
   }
@@ -724,10 +720,9 @@ class Editor {
    * @param {*} tab 
    * @param {boolean} saveAs treat this as a "save as", even if there's already a filename
    */
-  save( tab, saveAs ){
+  _save( tab, saveAs ){
 
-    tab = this.checkIndexTab(tab);
-    let active = this.getActiveTab();
+    tab = this._checkIndexTab(tab);
     let file = tab.opts.file;
 
     if( saveAs || !file ){
@@ -792,14 +787,9 @@ class Editor {
           monaco.editor.setModelLanguage( tab.opts.model, lang )
         }
 
-        instance.updateRecentFiles(file);
-        instance.updateOpenFiles();
+        instance._updateRecentFiles(file);
+        instance._updateOpenFiles();
 
-      }
-
-      if( tab === active ){
-        instance.dirty = false;
-        instance.baseAVID = tab.opts.baseAVID;
       }
 
       // TODO: reset watchers
@@ -812,16 +802,15 @@ class Editor {
    * 
    * @param {*} tab 
    */  
-  revert(tab){
+  _revert(tab){
 
-    tab = this.checkIndexTab(tab);
+    tab = this._checkIndexTab(tab);
     if( !tab.opts.file ){
-      console.warn( "Can't revert this tab (not linked to file)" );
+      console.warn( "Can't _revert this tab (not linked to file)" );
       return;
     }
 
     let instance = this;
-    let active = this.getActiveTab();
 
     return new Promise( function( resolve, reject ){
       fs.readFile( tab.opts.file, { encoding: 'utf8' }, function( err, contents ){
@@ -840,11 +829,6 @@ class Editor {
           tab.opts.baseAVID = tab.opts.model.getAlternativeVersionId();
           tab.classList.remove( "dirty" );          
 
-          if( tab === active ){
-            instance.dirty = false;
-            instance.baseAVID = tab.opts.baseAVID;
-          }
-
         }
         resolve();
       });
@@ -857,9 +841,9 @@ class Editor {
    * @param {*} add 
    * @param {*} toll 
    */
-  load( file, add, toll ){
+  _load( file, add, toll ){
 
-    if( !toll ) this.updateRecentFiles( file );
+    if( !toll ) this._updateRecentFiles( file );
     let instance = this;
 
     return new Promise( function( resolve, reject ){
@@ -878,7 +862,7 @@ class Editor {
 
         }
         else {
-          instance.addTab({ file: file, value: contents }, toll);
+          instance._addTab({ file: file, value: contents }, toll);
           /*
           watchFile( file );
           addEditor({ path: file, value: contents, node: opts.node }, toll);
@@ -900,7 +884,7 @@ class Editor {
 
   /**
    * 
-   * @param {string} file 
+   * @param {string=} file 
    */
   open( file ){
 
@@ -924,14 +908,14 @@ class Editor {
     let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
     for( let i = 0; i< tabs.length; i++ ){
       if( tabs[i].opts && tabs[i].opts.file === file ){
-        this.selectTab( tabs[i] );
+        this._selectTab( tabs[i] );
         return;
       }
     }
 
-    // ok, load 
+    // ok, _load 
 
-    this.load( file, true );
+    this._load( file, true );
   };
 
 }
