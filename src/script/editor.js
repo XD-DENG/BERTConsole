@@ -60,6 +60,7 @@ class Editor {
 
     this.editor = null;
     this.nodes = null;
+    this.closedTabs = [];
 
     /**
      * the dirty flag is a local flag used to prevent unnecessary 
@@ -515,6 +516,14 @@ class Editor {
     return this.nodes['editor-header'].querySelector( ".editor-tab.active" );
   }
 
+  uncloseTab(tab){
+    if( !this.closedTabs.length ){
+      console.warn( "Unclose tab: nothing on stack" );
+      return;
+    }
+    this.open(this.closedTabs.shift());
+  }
+
   /**
    * 
    * @param {*} tab reference or index
@@ -522,6 +531,14 @@ class Editor {
   closeTab(tab){
 
     tab = this.checkIndexTab(tab);
+
+    // FIXME: unsaved changes?
+    if( tab.opts.dirty ){
+      console.warn( "Closing tab with unsaved changes" );
+    }
+
+    // for unclosing. FIXME: cap?
+    if( tab.opts.file ) this.closedTabs.unshift( tab.opts.file );
 
     let active = this.getActiveTab();
     if( active === tab ){

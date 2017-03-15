@@ -719,6 +719,11 @@ window.addEventListener( "keydown", function(e){
       e.preventDefault();
       editor.selectTab({ delta: 1 });
     }
+    else if( e.code === "KeyT" && e.shiftKey ){
+      e.stopPropagation();
+      e.preventDefault();
+      editor.uncloseTab();
+    }
     else if( e.code === "KeyE" && !e.shiftKey ){
       e.stopPropagation();
       e.preventDefault();
@@ -731,7 +736,7 @@ window.addEventListener( "keydown", function(e){
       shell.clear();
       spinner.update();
     }
-    // else console.info( e.code );
+    // else { console.info( e.code ); window.e = e; }
     return;
   }
 });
