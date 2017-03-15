@@ -53,25 +53,31 @@ let languageAliases = {};
  * A: for one thing, the html is managed with IDs that will break if 
  * there are multiple instances.  that could be scoped, but it's not at the 
  * moment.  alternatively you could switch to classes (or prefix IDs).
+ * 
+ * A: for another thing, we are handling messages that don't specify 
+ * an editor ID.  that means parallel behavior in multiple editors. 
+ * FIXME: add editor ID.
  */
 class Editor {
 
   constructor(){
 
-    this.editor = null;
-    this.nodes = null;
-    this.closedTabs = [];
+    // reference to the editor object (monaco)
+    this._editor = null;
 
-    // we keep a reference to the active tab.  older versions 
-    // kept calling methods to get this, easier to just hold 
-    // on to it.
+    // layout nodes as a named map
+    this._nodes = null;
 
+    // reference to the active tab
     this._activeTab = null;
 
-    this.fileSettings = Model.createLocalStorageProxy({
+    // list of closed tabs (files) for unclosing.  FIXME: cache content?
+    this._closedTabs = [];
+
+    // file settings backed by local storage (open files, recent files)
+    this._fileSettings = Model.createLocalStorageProxy({
       recentFiles: []
     }, "file-settings", "file-settings-update" );
-    window.model = this.fileSettings;
 
   }
 
@@ -94,7 +100,7 @@ class Editor {
 
     // the local layout function will check if editor exists 
     handle( "statusBar", function(val){
-      let footer = this.nodes['editor-footer'];
+      let footer = this._nodes['editor-footer'];
       if( val ) footer.classList.remove( "hide" );
       else footer.classList.add( "hide" );
       this.layout();
@@ -118,14 +124,16 @@ class Editor {
     // to them, so we can just set.  but if we start adding classes 
     // we'll have to do some work.
 
-    this.nodes['editor-header'].className = theme;
-    this.nodes['editor-footer'].className = theme;
+    this._nodes['editor-header'].className = theme;
+    this._nodes['editor-footer'].className = theme;
 
   }
 
-
   /**
-   * initialize the editor component and UI.  
+   * API method: initialize the editor component and UI.  
+   * 
+   * @param {object} container
+   * @param {object} options
    */
   init(container, options){
 
@@ -149,20 +157,20 @@ class Editor {
       </div>
     `;
 
-    this.nodes = Utils.parseHTML( editorHTML, container );
+    this._nodes = Utils.parseHTML( editorHTML, container );
 
     let instance = this;
 
     PubSub.subscribe( "editor-cursor-position-change", function(channel, data){
-      instance.nodes['editor-info-position'].textContent = 
+      instance._nodes['editor-info-position'].textContent = 
         Utils.templateString( Messages.LINE_COL, data.lineNumber, data.column );
     });
 
     PubSub.subscribe( "status-message", function( channel, data ){
-      instance.nodes['editor-status-message'].textContent = data;
+      instance._nodes['editor-status-message'].textContent = data;
     });
 
-    instance.nodes['editor-header'].addEventListener( "click", function(e){
+    instance._nodes['editor-header'].addEventListener( "click", function(e){
       let node = e.target;
       let close = false;
       while( node && node.className ){
@@ -228,11 +236,11 @@ class Editor {
         // we install our first model.  not 100% sure of this behavior but seems 
         // to be ok to just ignore it.
 
-        instance.editor = monaco.editor.create(instance.nodes['editor-body'], options );
+        instance._editor = monaco.editor.create(instance._nodes['editor-body'], options );
 
         // window.editor = instance.editor;
 
-        instance.editor.addAction({
+        instance._editor.addAction({
 
           id: 'exec-selected-code',
           label: Messages.CONTEXT_EXECUTE_SELECTED_CODE,
@@ -265,7 +273,7 @@ class Editor {
 
         });
 
-        instance.editor.addAction({
+        instance._editor.addAction({
 
           id: 'exec-entire-buffer',
           label: Messages.CONTEXT_EXECUTE_BUFFEER,
@@ -295,8 +303,13 @@ class Editor {
         /**
          * show context menu.  we're not using monaco's built-in context menu 
          * because we want it to be consistent across the editor and the shell.
+         * 
+         * FIXME: instead of disabling the monaco context menu, trapping the 
+         * event, and showing this menu, can we override the existing service 
+         * function that shows the menu?  similar to the way we're overriding 
+         * the link open method.  
          */
-        instance.editor.onContextMenu( function( e ){
+        instance._editor.onContextMenu( function( e ){
 
           // see editor.main.js @ 72119.  TODO: where do the key accelerators come from?
 
@@ -310,12 +323,8 @@ class Editor {
           // we may be able to just pass the translated binding in to electron (but 
           // will that only work for EN-US?)
 
-          let cm = instance.editor.getContribution( "editor.contrib.contextmenu" );
+          let cm = instance._editor.getContribution( "editor.contrib.contextmenu" );
           let ma = cm._getMenuActions();
-
-  //        window.cm = cm;
-  //        window.ma = ma;
-
           let menu = new Menu();
 
           ma.forEach( function( action ){
@@ -348,15 +357,15 @@ class Editor {
         // FIXME: are there some schemes we want to handle differently?
         // 
 
-        let linkDetector = instance.editor.getContribution("editor.linkDetector" )
+        let linkDetector = instance._editor.getContribution("editor.linkDetector" )
         linkDetector.openerService.open = function( resource, options ){ 
           require('electron').shell.openExternal(resource.toString());
         };
 
-        instance.editor.onDidChangeCursorPosition( function(e){
+        instance._editor.onDidChangeCursorPosition( function(e){
           PubSub.publish( "editor-cursor-position-change", e.position );
           if( instance._activeTab && instance._activeTab.opts.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
-            let model = instance.editor.getModel();
+            let model = instance._editor.getModel();
             if( model.getAlternativeVersionId() === instance._activeTab.opts.baseAVID ){
               instance._activeTab.opts.dirty = false;
               instance._activeTab.classList.remove("dirty");
@@ -364,7 +373,7 @@ class Editor {
           }
         });
 
-        instance.editor.onDidChangeModelContent( function(e){
+        instance._editor.onDidChangeModelContent( function(e){
           if( instance._activeTab.opts.dirty ) return;
           instance._activeTab.opts.dirty = true;
           instance._activeTab.classList.add( "dirty" );
@@ -374,8 +383,8 @@ class Editor {
          * this only happens when you change the extension on a save.  switching 
          * models to a model with a different language does _not_ trigger this event.
          */
-        instance.editor.onDidChangeModelLanguage( function(e){
-          instance.nodes['editor-info-language'].textContent = // `Language: ${languageAliases[e.newLanguage]}`;
+        instance._editor.onDidChangeModelLanguage( function(e){
+          instance._nodes['editor-info-language'].textContent = // `Language: ${languageAliases[e.newLanguage]}`;
             Utils.templateString( Messages.LANGUAGE, languageAliases[e.newLanguage] );
 
         });
@@ -383,7 +392,7 @@ class Editor {
         /**
          * focus event: we want to indicate which panel has focus
          */
-        instance.editor.onDidFocusEditor( function(e){
+        instance._editor.onDidFocusEditor( function(e){
           PubSub.publish( "focus-event", "editor" );
         });
 
@@ -407,13 +416,13 @@ class Editor {
         // flashes a bit, though.
 
         let removePlaceholder = function(){
-          let placeholder = instance.nodes['placeholder-tab'];
+          let placeholder = instance._nodes['placeholder-tab'];
           placeholder.parentNode.removeChild( placeholder );
-          delete instance.nodes['placeholder-tab'];
+          delete instance._nodes['placeholder-tab'];
         }
 
-        if( instance.fileSettings.openFiles && instance.fileSettings.openFiles.length ){
-          let files = instance.fileSettings.openFiles.slice(0);
+        if( instance._fileSettings.openFiles && instance._fileSettings.openFiles.length ){
+          let files = instance._fileSettings.openFiles.slice(0);
           let loadNext = function(){
             return new Promise( function( resolve, reject ){
               let file = files.shift();
@@ -429,7 +438,7 @@ class Editor {
           }
           loadNext().then( function(){
             removePlaceholder();
-            instance._selectTab(instance.fileSettings.activeTab || 0);
+            instance._selectTab(instance._fileSettings.activeTab || 0);
           })
         }
         else {
@@ -451,11 +460,11 @@ class Editor {
    */
   layout(){
 
-    if( !this.editor ) return;
+    if( !this._editor ) return;
 
-    let node = this.nodes['editor-body'];
+    let node = this._nodes['editor-body'];
     if( node.clientWidth > 0 && node.clientHeight > 0 )
-      this.editor.layout({ width: node.clientWidth, height: node.clientHeight});
+      this._editor.layout({ width: node.clientWidth, height: node.clientHeight});
   } 
 
   /**
@@ -474,11 +483,11 @@ class Editor {
    */
   _checkIndexTab(tab){
     if( typeof tab === "number" ){
-      let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
+      let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
       return tab >= 0 && tabs.length > tab ? tabs[tab] : tabs[0];
     }
     else if( typeof tab === "string" ){
-      let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
+      let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
       for( let i = 0; i< tabs.length; i++ ){
         if( tabs[i].opts && tabs[i].opts.file === tab ) return tabs[i];
       }    
@@ -486,7 +495,7 @@ class Editor {
     }
     else if( typeof tab.delta !== "undefined" ){
       let index = 0;
-      let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
+      let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
       for( ; index< tabs.length; index++ ) if( tabs[index].classList.contains( "active" )) break;
       index = (index + Number( tab.delta ) + tabs.length) % tabs.length;
       return tabs[index];
@@ -495,19 +504,14 @@ class Editor {
   }
 
   /**
-   * convenience method, get the active tab (as reference)
-   * /
-  _getActiveTab(){
-    return this.nodes['editor-header'].querySelector( ".editor-tab.active" );
-  }
-  */
-
-  _uncloseTab(tab){
-    if( !this.closedTabs.length ){
+   * API method: unclose the last-closed tab.  FIXME: restore state?
+   */
+  uncloseTab(){
+    if( !this._closedTabs.length ){
       console.warn( "Unclose tab: nothing on stack" );
       return;
     }
-    this.open(this.closedTabs.shift());
+    this.open(this._closedTabs.shift());
   }
 
   /**
@@ -524,7 +528,7 @@ class Editor {
     }
 
     // for unclosing. FIXME: cap?
-    if( tab.opts.file ) this.closedTabs.unshift( tab.opts.file );
+    if( tab.opts.file ) this._closedTabs.unshift( tab.opts.file );
 
     if( this._activeTab === tab ){
 
@@ -575,25 +579,25 @@ class Editor {
 
     // save state
     if( this._activeTab ){
-      this._activeTab.opts.state = this.editor.saveViewState();
+      this._activeTab.opts.state = this._editor.saveViewState();
       this._activeTab.classList.remove( "active" );
     }
 
     tab.classList.add( "active" );
-    this.editor.setModel(tab.opts.model);
-    if( tab.opts.state ) this.editor.restoreViewState(tab.opts.state);
+    this._editor.setModel(tab.opts.model);
+    if( tab.opts.state ) this._editor.restoreViewState(tab.opts.state);
 
     this._activeTab = tab;
     tab.opts.baseAVID = tab.opts.baseAVID;
 
     let lang = tab.opts.model.getLanguageIdentifier().language;
-    this.nodes['editor-info-language'].textContent = 
+    this._nodes['editor-info-language'].textContent = 
       Utils.templateString( Messages.LANGUAGE, languageAliases[lang] );
 
-    PubSub.publish( "editor-cursor-position-change", this.editor.getPosition());
+    PubSub.publish( "editor-cursor-position-change", this._editor.getPosition());
 
-    this.editor.focus();
-    if( tab.opts.file ) this.fileSettings.activeTab = tab.opts.file;
+    this._editor.focus();
+    if( tab.opts.file ) this._fileSettings.activeTab = tab.opts.file;
 
   }
 
@@ -601,7 +605,7 @@ class Editor {
    * API method to focus editor
    */
   focus(){
-    this.editor.focus();
+    this._editor.focus();
   }
 
   /**
@@ -643,7 +647,7 @@ class Editor {
     opts.baseAVID = opts.model.getAlternativeVersionId();
 
     tab.opts = opts;
-    this.nodes['editor-header'].appendChild(tab);
+    this._nodes['editor-header'].appendChild(tab);
 
     if( !toll ){
       this._selectTab(tab);
@@ -653,13 +657,13 @@ class Editor {
   }
 
   _updateOpenFiles(){
-    let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
+    let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
     let files = Array.prototype.map.call( tabs, function( tab ){
       if( tab.opts && tab.opts.file ){
         return tab.opts.file;
       }
     });
-    this.fileSettings.openFiles = files.filter( function( f ){ return f; });
+    this._fileSettings.openFiles = files.filter( function( f ){ return f; });
   }
 
   _updateRecentFiles(file){
@@ -673,14 +677,14 @@ class Editor {
 
     // actually, different behavior.  if it's in the list, do nothing.
 
-    let tmp = this.fileSettings.recentFiles.some(function( check ){ return check === file; });
+    let tmp = this._fileSettings.recentFiles.some(function( check ){ return check === file; });
     if( tmp ) return;
 
     // otherwise add at the top (limit to X)
 
-    tmp = this.fileSettings.recentFiles.slice(0, 9);
+    tmp = this._fileSettings.recentFiles.slice(0, 9);
     tmp.unshift( file );
-    this.fileSettings.recentFiles = tmp;
+    this._fileSettings.recentFiles = tmp;
 
     PubSub.publish( "update-menu" ); // trigger a menu update
 
@@ -694,7 +698,7 @@ class Editor {
    */
   updateOptions(opts){
     this._handleLocalOptions(opts);
-    this.editor.updateOptions(opts);
+    this._editor.updateOptions(opts);
     if( typeof opts.theme !== "undefined" ) this._updateEditorTheme( opts.theme );
   }
 
@@ -711,7 +715,7 @@ class Editor {
    * API method: get recent files.  for menu.
    */
   getRecentFiles(){
-    if( this.fileSettings.recentFiles ) return this.fileSettings.recentFiles.slice(0);
+    if( this._fileSettings.recentFiles ) return this._fileSettings.recentFiles.slice(0);
     return [];
   }
 
@@ -905,7 +909,7 @@ class Editor {
 
     // if the file is already open, don't open it again. switch to the buffer.
 
-    let tabs = this.nodes['editor-header'].querySelectorAll( ".editor-tab" );
+    let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
     for( let i = 0; i< tabs.length; i++ ){
       if( tabs[i].opts && tabs[i].opts.file === file ){
         this._selectTab( tabs[i] );

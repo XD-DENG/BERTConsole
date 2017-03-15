@@ -15,7 +15,7 @@ module.exports = {
 
   Main: [
     {
-      label: "File",
+      label: "&File",
       submenu: [
         {
           id: "file-new",
@@ -61,7 +61,7 @@ module.exports = {
       ]
     },
     {
-      label: "Edit",
+      label: "&Edit",
       submenu: [
         {
           role: "undo"
@@ -103,7 +103,7 @@ module.exports = {
       ]
     },
     {
-      label: "View",
+      label: "&View",
       submenu: [
         {
           label: "Show Editor",
@@ -216,7 +216,7 @@ module.exports = {
       ]
     },
     {
-      label: "Packages",
+      label: "&Packages",
       submenu: [
         {
           id: "r-packages-choose-mirror",

@@ -289,18 +289,64 @@ module.exports.showMirrorChooser = function(R, settings){
     getTemplate( path.join( __dirname, "..", "data/mirror-chooser.template.html" )).then( function(template){
 
       let vlist, cran = undefined;
+      let update, nodetemplate;
+      let show_http = //(settings.cran && settings.cran.show_http_mirrors);
+        ( settings.cran && settings.cran.mirror && settings.cran.mirror.match( /http\:/ ));
+
       let df = Cache.get( "mirror-list" );
 
       let chooser = new HTMLDialog(template, Messages);
       chooser.nodes['mirror-chooser-wait'].style.display = "block";
       chooser.nodes['mirror-chooser-list'].style.display = "none";
 
+      chooser.nodes['checkbox-show-http'].checked = show_http;
+
+      // update the filter, update or potentially create the list 
+      let updateFilter = function(http){
+
+        if( vlist && http === show_http ) return;
+
+        let filtered = http ? df : df.filter( function( entry ){
+          return entry.URL.match( /^https/i );
+        });
+
+        // for whatever reason when storing the URL R adds a trailing 
+        // slash -- are we sure that's universal?
+
+        let firstIndex = 0;
+        
+        if( cran ){
+          let cranslash = cran + "/";
+          for( let i = 0; i< filtered.length; i++ ){
+            filtered[i].selected = ( filtered[i].URL === cran ) || ( filtered[i].URL === cranslash );
+            if( filtered[i].selected ) firstIndex = i;
+          }
+        }
+          
+        if( !vlist ){
+          vlist = new VList( chooser.nodes['mirror-chooser-list'], filtered, nodetemplate, update, { firstIndex: firstIndex });
+        }
+        else {
+          vlist.updateData( filtered, firstIndex );
+        }
+
+      };
+
       let click = function(e){
         let n = e.target;
+
         while( n && n.parentNode && n.className !== "vlist-list-entry" ){
+          if( n.className === 'dialog-checkbox' ){
+            let cb = n.querySelector( "input[type=checkbox]" );
+            cb.checked = !cb.checked; 
+            updateFilter( cb.checked );
+            return;
+          }
           n = n.parentNode;
         }
-        if( n.className !== "vlist-list-entry" ) return null;
+        if( n.className !== "vlist-list-entry" ){
+          return null;
+        }
         let d = n.data;
         if( !d.selected ){
           for( let i = 0; i< df.length; i++ ){
@@ -353,22 +399,10 @@ module.exports.showMirrorChooser = function(R, settings){
           // ...
         }
 
-        // for whatever reason when storing the URL R adds a trailing 
-        // slash -- are we sure that's universal?
-
-        let firstIndex = 0;
-        if( cran ){
-          let cranslash = cran + "/";
-          for( let i = 0; i< df.length; i++ ){
-            df[i].selected = ( df[i].URL === cran ) || ( df[i].URL === cranslash );
-            if( df[i].selected ) firstIndex = i;
-          }
-        }
-
         chooser.nodes['mirror-chooser-wait'].style.display = "none";
         chooser.nodes['mirror-chooser-list'].style.display = "block";
 
-        let update = function( node, data, index ){
+        update = function( node, data, index ){
           node.querySelector( '.mirror-chooser-name' ).innerText = data.Name;
           node.querySelector( '.mirror-chooser-host' ).innerText = data.Host;
 
@@ -379,7 +413,7 @@ module.exports.showMirrorChooser = function(R, settings){
           node.data = data;
         };
 
-        let nodetemplate = `
+        nodetemplate = `
           <div class='mirror-chooser-entry'>
             <div class='chooser-radio'>
               <div class='chooser-label'>
@@ -390,7 +424,7 @@ module.exports.showMirrorChooser = function(R, settings){
           </div>
         `;
 
-        vlist = new VList( chooser.nodes['mirror-chooser-list'], df, nodetemplate, update, { firstIndex: firstIndex });
+        updateFilter(show_http);
       });
     });
   });

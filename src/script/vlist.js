@@ -136,11 +136,22 @@ const VList = function( parent, data, template, update, options ){
 
   this.repaint = function(){ updateAll(true); }
 
-  this.updateData = function(newdata){
+  this.updateData = function(newdata, scrollTo){
     data = newdata;
     totalHeight = data.length * size.height;
-    this.repaint();
+    updateAll(true);
+    if( typeof scrollTo !== "undefined" ){
+      window.requestAnimationFrame(function(){
+        parent.parentNode.scrollTop = size.height * ( scrollTo - 1 );
+      });
+    }
   };
+
+  this.scrollTo = function(index){
+    window.requestAnimationFrame(function(){
+      parent.parentNode.scrollTop = size.height * ( index - 1 );
+    })
+  }
 
   this.cleanup = function(){
     parent.removeEventListener( "scroll", scrollFunction );

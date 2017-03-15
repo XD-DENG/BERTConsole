@@ -1,6 +1,10 @@
 
 /* --- chooser ---------------------------------------------------------- */
 
+.chooser-label {
+  max-width: 99%;
+}
+
 .chooser-radio, .chooser-checkbox {
   padding-left: 0em;
   cursor: default;
@@ -46,12 +50,28 @@
 
 /* --- mirror chooser---------------------------------------------------- */
 
+#mirror-chooser .dialog-body {
+  min-height: 10em;
+}
+
+#mirror-chooser-wait {
+  margin: .5em 1em;
+}
+
+#mirror-chooser {
+  height: 90%;
+  width: 50%;
+}
+
 .mirror-chooser-name {
   font-size: 1.2em;
 }
 
 .mirror-chooser-host {
   color: #666;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mirror-chooser-entry {
@@ -62,6 +82,44 @@
 .vlist-list-entry:nth-child(even) .mirror-chooser-entry {
   background: #e0f5fc;
 }
+
+.chooser-footer-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+.chooser-footer-layout .left-side {
+  text-align: left;
+  top: 50%;
+  flex-grow: 1;
+}
+
+.chooser-footer-layout .right-side {
+
+}
+
+.dialog-checkbox {
+  padding: 6px 12px;
+}
+
+.dialog-checkbox input[type=checkbox] {
+  display: none;
+}
+
+.dialog-checkbox label:before {
+  content: '\2610';
+  font-size: 1.33em;
+  position: relative;
+  top: 1px;
+  padding-right: .33em;
+  color: #444;
+}
+
+.dialog-checkbox input[type="checkbox"]:checked + label::before {
+  content: '\2611';
+}
+
 
 /* --- package chooser------------------------------------------------------ */
 

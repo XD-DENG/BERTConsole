@@ -1,19 +1,6 @@
 
 <!-- markup for CRAN mirror chooser -->
 
-<style>
-  #mirror-chooser .dialog-body {
-    min-height: 10em;
-  }
-  #mirror-chooser-wait {
-    margin: .5em 1em;
-  }
-  #mirror-chooser {
-    height: 90%;
-    width: 50%;
-  }
-</style>
-
 <div id='mirror-chooser' class='dialog-dialog'>
   
   <div class='dialog-header' data-textcontent-message="SELECT_MIRROR">
@@ -28,9 +15,18 @@
     </div>
   </div>
   
-  <div class='dialog-footer dialog-footer-align-right'>
-    <button class='dialog-button dialog-button-ok' data-textcontent-message="OK">OK</button>
-    <button class='dialog-button dialog-button-cancel' data-textcontent-message="CANCEL">Cancel</button>
+  <div class='dialog-footer '>
+    <div class='chooser-footer-layout'>
+      <div class='left-side'>
+        <div class='dialog-checkbox'>
+          <input type='checkbox' id='checkbox-show-http'/><label for='checkbox-show-http'>Show HTTP mirrors</label>
+        </div>
+      </div>
+      <div class='right-side'>
+        <button class='dialog-button dialog-button-ok' data-textcontent-message="OK">OK</button>
+        <button class='dialog-button dialog-button-cancel' data-textcontent-message="CANCEL">Cancel</button>
+      </div>
+    </div>
   </div>
 
 </div>
