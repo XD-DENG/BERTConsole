@@ -1,14 +1,37 @@
+/**
+ * Copyright (c) 2016-2017 Structured Data, LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to 
+ * deal in the Software without restriction, including without limitation the 
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+ * sell copies of the Software, and to permit persons to whom the Software is 
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+"use strict";
 
 const fs = require( "fs" );
 const path = require( "path" );
 
 const PubSub = require( "pubsub-js" );
 const Shell = require( "cmjs-shell" );
-const chokidar = require('chokidar');
 
 const {remote, ipcRenderer} = require('electron');
 const {Menu, MenuItem, dialog} = remote;
 
+const Watcher = require( "./watcher.js" );
 const Splitter = require( "./splitter.js" );
 const { Model } = require( "./model.js" );
 const editor = require( "./editor.js" );
@@ -22,52 +45,18 @@ const ApplicationMenus = require( "../data/menus.js" );
 
 require( "./resize-events.js" );
 
-let settingsFile = "bert-shell-2-settings.json";
-if( process.env.BERT_SHELL_HOME ) settingsFile = path.join( process.env.BERT_SHELL_HOME, settingsFile );
+////////////////////////////////////////////////////////////////////////////////
+//
+// methods 
+//
 
-let userStylesheet = "user-stylesheet.css";
-if( process.env.BERT_SHELL_HOME ) userStylesheet = path.join( process.env.BERT_SHELL_HOME, userStylesheet );
-
-let R, shell, package;
 
 /**
- * state object so we stop stuffing crap into the global namespace
+ * create menu from template.  our templates are little different than the 
+ * standard electron templates.
+ * 
+ * @param {object} template 
  */
-let state = {
-  focused: null,
-  shell_size: -1,
-  menuEnabledStack: 0, 
-  menuCache: null
-};
-
-/**
- * settings is an observed proxy backed by a file.  the defaults here 
- * will get overwritten if the file exists.
- */
-let settings = Model.createFileStorageProxy({
-  layout: { 
-    split: [50, 50], 
-    direction: Splitter.prototype.Direction.HORIZONTAL 
-  }, 
-  shell: {
-    theme: "dark",
-    resize: true
-  },
-  editor: {
-    theme: "vs",
-    lineNumbers: true,
-    statusBar: true
-  }
-}, settingsFile, "settings-change", true );
-
-window.settings = settings;
-
-let split = new Splitter({ 
-  node: document.getElementById("container"), 
-  size: settings.layout.split || [50, 50],
-  direction: settings.layout.direction || Splitter.prototype.Direction.HORIZONTAL
-});
-
 const createMenu = function( template ){
   let menu = new Menu();
   template.forEach( function( item ){
@@ -99,13 +88,16 @@ const createMenu = function( template ){
   return menu;
 };
 
+/**
+ * resize the shell -- this sets the R linebreak width
+ */
 const resizeShell = function(){
 
   if( !settings.shell || !settings.shell.resize ) return;
 
-  let w = shell.get_width_in_chars();
+  let w = Math.max( 10, shell.get_width_in_chars() - 1 ); // we need some space because we're padding on the left
   if( state.shell_size === w ) return;
-  state.shell_size = Math.max( 10, w );
+  state.shell_size = w;
   R.internal( ["set-console-width", state.shell_size], "set-console-width" );
 
 }
@@ -306,9 +298,9 @@ const updateMenu = function(){
     });
   }
 
-  if( package ){
+  if( packagejson ){
     node = findNode( template, "bert-shell-version" );
-    if( node ) node.label += ` ${package.version}`;
+    if( node ) node.label += ` ${packagejson.version}`;
   }
 
   // editor themes
@@ -344,103 +336,7 @@ const updateMenu = function(){
   
   });
 
-}
-
-/**
- * enable or disable menu bar (or as close as we can get on electron).
- * disabled state stacks.
- */
-PubSub.subscribe( "enable-menu-bar", function( channel, enable ){
-  
-  if( enable ){
-    if( state.menuEnabledStack === 0 ) return;
-    state.menuEnabledStack--;
-  }
-  else state.menuEnabledStack++;
-
-  let menu = Menu.getApplicationMenu();
-  if( state.menuEnabledStack === 0 ){
-    Menu.setApplicationMenu(state.menuCache);
-  }
-  else if( state.menuEnabledStack === 1 ){
-    state.menuCache = Menu.getApplicationMenu();
-    let menu2 = new Menu();
-    menu.items.forEach( function( item, index ){
-      menu2.insert( index, new MenuItem({ label: item.label, enabled: false }));
-    });
-    Menu.setApplicationMenu(menu2);
-  }
-
-});
-
-PubSub.subscribe( "execute-block", function( channel, code ){
-  if( !code.endsWith( "\n" )) code = code + "\n";
-  shell.execute_block( code );
-});
-
-PubSub.subscribe( "menu-click", function( channel, data ){
-  
-  if( data ) switch( data.id ){
-  case "developer-reload":
-    if (data.focusedWindow && settings.developer && settings.developer['allow-reloading']){
-      global.allowReload = true; // ??
-      data.focusedWindow.reload();
-    }
-    break;
-
-  case "developer-toggle-tools":
-    if (data.focusedWindow) data.focusedWindow.webContents.toggleDevTools();
-    break;
-
-  case "open-recent":
-    if( data.file ) editor.open( data.file );
-    break;
-
-  case "help-learn-more":
-    require('electron').shell.openExternal('https://bert-toolkit.com');
-    break;
-
-  case "help-feedback":
-    require('electron').shell.openExternal('https://bert-toolkit.com/contact');
-    break;
-
-  case "help-issues":
-    require('electron').shell.openExternal('https://github.com/sdllc/Basic-Excel-R-Toolkit/issues');
-    break;
-
-  case "reset-layout":
-    split.setSizes( 50, 50 );
-    editor.layout();
-    PubSub.publish( "splitter-drag" );
-    break;
-
-  case "r-packages-choose-mirror":
-    CRAN.showMirrorChooser(R, settings);
-    break;
-
-  case "r-packages-install-packages":
-    CRAN.showPackageChooser(R, settings);
-    break;
-
-  case "shell-select-all":
-    shell.select_all();
-    break;
-
-  case "shell-clear-shell":
-    shell.clear();
-    spinner.update();
-    break;
-
-  case "user-stylesheet":
-    editor.open( userStylesheet );
-    break;
-
-  default:
-    console.info( data );
-    break;
-  }
-
-});
+};
 
 
 /**
@@ -668,12 +564,164 @@ const init_r = function(){
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// fields and initialization 
+//
+
+let settingsFile = "bert-shell-2-settings.json";
+if( process.env.BERT_SHELL_HOME ) settingsFile = path.join( process.env.BERT_SHELL_HOME, settingsFile );
+else settingsFile = path.join( __dirname, "../../", settingsFile );
+
+let userStylesheet = "user-stylesheet.css";
+if( process.env.BERT_SHELL_HOME ) userStylesheet = path.join( process.env.BERT_SHELL_HOME, userStylesheet );
+else userStylesheet = path.join( __dirname, "../../", userStylesheet );
+
+let R, shell, packagejson;
+
+/**
+ * state object so we stop stuffing crap into the global namespace
+ */
+let state = {
+  focused: null,
+  shell_size: -1,
+  menuEnabledStack: 0, 
+  menuCache: null
+};
+
+/**
+ * settings is an observed proxy backed by a file.  the defaults here 
+ * will get overwritten if the file exists.
+ */
+let settings = Model.createFileStorageProxy({
+  layout: { 
+    split: [50, 50], 
+    direction: Splitter.prototype.Direction.HORIZONTAL 
+  }, 
+  shell: {
+    theme: "dark",
+    resize: true
+  },
+  editor: {
+    theme: "vs",
+    lineNumbers: true,
+    statusBar: true,
+    tabSize: 2,
+    insertSpaces: false    
+  }
+}, settingsFile, "settings-change", { pretty: true });
+
+window.settings = settings;
+
+let split = new Splitter({ 
+  node: document.getElementById("container"), 
+  size: settings.layout.split || [50, 50],
+  direction: settings.layout.direction || Splitter.prototype.Direction.HORIZONTAL
+});
+
+/**
+ * enable or disable menu bar (or as close as we can get on electron).
+ * disabled state stacks.
+ */
+PubSub.subscribe( "enable-menu-bar", function( channel, enable ){
+  
+  if( enable ){
+    if( state.menuEnabledStack === 0 ) return;
+    state.menuEnabledStack--;
+  }
+  else state.menuEnabledStack++;
+
+  let menu = Menu.getApplicationMenu();
+  if( state.menuEnabledStack === 0 ){
+    Menu.setApplicationMenu(state.menuCache);
+  }
+  else if( state.menuEnabledStack === 1 ){
+    state.menuCache = Menu.getApplicationMenu();
+    let menu2 = new Menu();
+    menu.items.forEach( function( item, index ){
+      menu2.insert( index, new MenuItem({ label: item.label, enabled: false }));
+    });
+    Menu.setApplicationMenu(menu2);
+  }
+
+});
+
+PubSub.subscribe( "execute-block", function( channel, code ){
+  if( !code.endsWith( "\n" )) code = code + "\n";
+  shell.execute_block( code );
+});
+
+PubSub.subscribe( "menu-click", function( channel, data ){
+  
+  if( data ) switch( data.id ){
+  case "developer-reload":
+    if (data.focusedWindow && settings.developer && settings.developer['allow-reloading']){
+      global.allowReload = true; // ??
+      data.focusedWindow.reload();
+    }
+    break;
+
+  case "developer-toggle-tools":
+    if (data.focusedWindow) data.focusedWindow.webContents.toggleDevTools();
+    break;
+
+  case "open-recent":
+    if( data.file ) editor.open( data.file );
+    break;
+
+  case "help-learn-more":
+    require('electron').shell.openExternal('https://bert-toolkit.com');
+    break;
+
+  case "help-feedback":
+    require('electron').shell.openExternal('https://bert-toolkit.com/contact');
+    break;
+
+  case "help-issues":
+    require('electron').shell.openExternal('https://github.com/sdllc/Basic-Excel-R-Toolkit/issues');
+    break;
+
+  case "reset-layout":
+    split.setSizes( 50, 50 );
+    editor.layout();
+    PubSub.publish( "splitter-drag" );
+    break;
+
+  case "r-packages-choose-mirror":
+    CRAN.showMirrorChooser(R, settings);
+    break;
+
+  case "r-packages-install-packages":
+    CRAN.showPackageChooser(R, settings);
+    break;
+
+  case "shell-select-all":
+    shell.select_all();
+    break;
+
+  case "shell-clear-shell":
+    shell.clear();
+    spinner.update();
+    break;
+
+  case "user-stylesheet":
+    editor.open( userStylesheet );
+    break;
+
+  default:
+    console.info( data );
+    break;
+  }
+
+});
+
+
 // read package.json
 
 fs.readFile( path.join( __dirname, "../../package.json" ), function( err, data ){
   if( err ) console.error( "ERR reading package.json", err );
   else {
-    package = JSON.parse( data );
+    packagejson = JSON.parse( data );
     PubSub.publish( "update-menu" );
   }
 })
@@ -682,17 +730,21 @@ fs.readFile( path.join( __dirname, "../../package.json" ), function( err, data )
 
 Utils.ensureCSS( userStylesheet, { "data-position": -1 });
 
-//let watcher = chokidar.watch( [userStylesheet] );
-let watcher = new chokidar.FSWatcher();
-console.info( "add watch", userStylesheet );
-watcher.add( userStylesheet );
+Watcher.watch( userStylesheet );
+Watcher.watch( settingsFile );
 
-watcher.on( "change", function( file ){
-  console.info( "WC", file );
-  if( file === userStylesheet ){ // || file === path.basename(userStylesheet)){
+PubSub.subscribe( "file-change-event", function( channel, file ){
+  switch(file){
+  case userStylesheet:
     Utils.ensureCSS( userStylesheet, { "data-position": -1 }, true );
+    break;
+  case settingsFile:
+    Model.reloadFileStorageProxy(settings, settingsFile);
+    PubSub.publish( "update-menu" );
+    break;
   }
-})
+});
+
 
 // initialize editor, shell, R connection
 
@@ -762,9 +814,13 @@ PubSub.subscribe( "window-resize", function(channel, data){
 
 /** only on drag end do we update settings */
 PubSub.subscribe( "splitter-resize", function(channel, data){
-  settings.layout = { split: [ 
-    Number( split.panes[0].style.width.replace( /[^\d\.]/g, "" )),
-    Number( split.panes[1].style.width.replace( /[^\d\.]/g, "" ))] };
+
+  if( !settings.layout ){ settings.layout = {}; }
+  
+  let field = split.vertical ? "height" : "width";
+  settings.layout.split = [ 
+    Number( split.panes[0].style[field].replace( /[^\d\.]/g, "" )),
+    Number( split.panes[1].style[field].replace( /[^\d\.]/g, "" ))] ;
 
   resizeShell();
   shell.refresh();
@@ -823,7 +879,6 @@ PubSub.subscribe( "settings-change", function( channel, data ){
 
 if( settings.editor && settings.editor.hide ) split.setVisible( 0, false );
 if( settings.shell && settings.shell.hide ) split.setVisible( 1, false );
-
 
 updateShellTheme();
 

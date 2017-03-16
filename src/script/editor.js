@@ -1,3 +1,26 @@
+/**
+ * Copyright (c) 2016-2017 Structured Data, LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to 
+ * deal in the Software without restriction, including without limitation the 
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+ * sell copies of the Software, and to permit persons to whom the Software is 
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+"use strict";
 
 // node modules
 
@@ -74,6 +97,9 @@ class Editor {
     // list of closed tabs (files) for unclosing.  FIXME: cache content?
     this._closedTabs = [];
 
+    // options passed to created models
+    this._modelOptions = {};
+
     // file settings backed by local storage (open files, recent files)
     this._fileSettings = Model.createLocalStorageProxy({
       recentFiles: []
@@ -106,6 +132,25 @@ class Editor {
       this.layout();
     });
 
+    // model options 
+    let updateModels = false;
+    let modelOptions = {};
+    [ "insertSpaces", "tabSize", "trimAutoWhitespace" ].forEach( function( key ){
+      if( typeof options[key] !== "undefined" ){
+        modelOptions[key] = options[key];
+        this._modelOptions[key] = options[key];
+        updateModels = true;
+        delete options[key];
+      }
+    }, this);
+
+    // if we've initialized, update existing models
+    if( self.monaco ){
+      monaco.editor.getModels().forEach( function( model ){
+        model.updateOptions( this._modelOptions );
+      }, this)
+    }
+
   }
 
   /**
@@ -118,14 +163,20 @@ class Editor {
    */
   _updateEditorTheme( theme ){
 
-    theme = "monaco-editor " + (theme || "vs"); // default
+    // theme = "monaco-editor " + (theme || "vs"); // default
+    theme = theme || "vs"; // default
 
-    // FIXME: currently these two nodes don't have classes attached 
-    // to them, so we can just set.  but if we start adding classes 
-    // we'll have to do some work.
+    this.getAvailableThemes().forEach( function(cls){
+      this._nodes['editor-header'].classList.remove(cls);
+      this._nodes['editor-footer'].classList.remove(cls);
+    }, this);
 
-    this._nodes['editor-header'].className = theme;
-    this._nodes['editor-footer'].className = theme;
+    // could just put this in markup
+    this._nodes['editor-header'].classList.add("monaco-editor");
+    this._nodes['editor-footer'].classList.add("monaco-editor");
+
+    this._nodes['editor-header'].classList.add(theme);
+    this._nodes['editor-footer'].classList.add(theme);
 
   }
 
@@ -209,7 +260,7 @@ class Editor {
         instance.open();
         break;
 
-      case "file-_revert":
+      case "file-revert":
         instance._revert(instance._activeTab);
         break;
 
@@ -364,7 +415,8 @@ class Editor {
 
         instance._editor.onDidChangeCursorPosition( function(e){
           PubSub.publish( "editor-cursor-position-change", e.position );
-          if( instance._activeTab && instance._activeTab.opts.dirty && ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
+          if( instance._activeTab && instance._activeTab.opts.dirty && 
+              ( e.reason === monaco.editor.CursorChangeReason.Undo || e.reason === monaco.editor.CursorChangeReason.Redo )){
             let model = instance._editor.getModel();
             if( model.getAlternativeVersionId() === instance._activeTab.opts.baseAVID ){
               instance._activeTab.opts.dirty = false;
@@ -384,7 +436,7 @@ class Editor {
          * models to a model with a different language does _not_ trigger this event.
          */
         instance._editor.onDidChangeModelLanguage( function(e){
-          instance._nodes['editor-info-language'].textContent = // `Language: ${languageAliases[e.newLanguage]}`;
+          instance._nodes['editor-info-language'].textContent = 
             Utils.templateString( Messages.LANGUAGE, languageAliases[e.newLanguage] );
 
         });
@@ -560,7 +612,7 @@ class Editor {
 
   /**
    * API method for switching tabs; this one expects a delta.  I wanted 
-   * to (theoretically) limit access to the selectTab function.
+   * (at least conceptually) to limit access to the selectTab function.
    */
   switchTab( delta ){
     this._selectTab({ delta: delta });
@@ -616,6 +668,8 @@ class Editor {
    */
   _addTab(opts, toll, model){
 
+    if( model ) console.warn( "passed 3d options" );
+
     // UPDATE: there's never a tab without an opts and there's 
     // always an opts.baseAVID (defaults to 1).  I don't want 
     // everyone to test on these values.
@@ -645,6 +699,8 @@ class Editor {
 
     opts.model = model || monaco.editor.createModel(opts.value, lang);  
     opts.baseAVID = opts.model.getAlternativeVersionId();
+
+    opts.model.updateOptions( this._modelOptions );
 
     tab.opts = opts;
     this._nodes['editor-header'].appendChild(tab);

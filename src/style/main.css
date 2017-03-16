@@ -37,6 +37,10 @@ body {
   color: #ddd;
 }
 
+.split-pane {
+  background: #fff;
+}
+
 /* --- slight modification to the defaults ------------------------------ */
 
 .CodeMirror, .fixed-width { 

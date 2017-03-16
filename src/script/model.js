@@ -1,4 +1,26 @@
 /**
+ * Copyright (c) 2016-2017 Structured Data, LLC
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to 
+ * deal in the Software without restriction, including without limitation the 
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or 
+ * sell copies of the Software, and to permit persons to whom the Software is 
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in 
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING 
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+
+/**
  * observed proxy.  it will broadcast changes via pubsub-js 
  * using the passed event name or a default.  we add 
  * a method to stop (and resume) broadcasting in the event 
@@ -10,14 +32,16 @@
  * although regarding batching, do you consolidate all the 
  * updates? if we're checking the path, then we still need 
  * it. perhaps make path optionally an array.
- * 
- * Copyright (c) 2016 Structured Data, LLC
  */
 
 "use strict";
 
 const fs = require( "fs" );
 const PubSub = require( "pubsub-js" );
+const chokidar = require( "chokidar" );
+const diff = require('deep-diff').diff;
+
+const { Utils } = require( "./util2.js" );
 
 const DEFAULT_EVENT = "model-update";
 
@@ -125,6 +149,7 @@ class Model {
   static createBackedProxy(o, event, save, restore) {
 
     event = event || DEFAULT_EVENT;
+    Object.defineProperty( o, "__event__", { enumerable: false, configurable: false, value: event });
 
     let timerID = undefined;
 
@@ -195,31 +220,91 @@ class Model {
   }
 
   /**
+   * for a file-backed model, reload the file.  we want to avoid looping 
+   * (we load, fire change events, it gets saved, we load...) so we handle 
+   * this in a couple of stages: (1) we load the new file. (2) we set changes
+   * without broadcasting. (3) we broadcast change events for the deltas.
+   * 
+   * @param {*} obj 
+   * @param {*} file 
+   */
+  static reloadFileStorageProxy(obj, file){
+    return new Promise( function( resolve, reject ){
+
+      if( obj.__saving__ ){ return resolve(); }
+
+      console.info( "revert from saved" );
+
+      fs.readFile( file, "utf8", function( err, data ){
+        if( err ) return reject( err );
+        try {
+
+          // clone existing
+          let orig = JSON.parse( JSON.stringify( obj.__base__ ));
+
+          // get new and set
+          data = JSON.parse( data );
+          obj.__broadcast__ = false;
+          Object.keys(obj).forEach( function(key){
+            delete obj[key];
+          });
+          Object.keys(data).forEach( function(key){
+            obj[key] = data[key];
+          });
+          obj.__broadcast__ = false;
+
+          // now fire events for changes
+          let event = obj.__event__;
+          let delta = diff( orig, data );
+
+          if( delta ){
+            delta.forEach( function( change ){
+              let prop = change.path.join( "." );
+              if( change.kind === 'A' ) prop = prop + "." + change.index;
+              let val = Utils.dereference_get( obj, prop );
+              if( typeof event === "function" ) event(prop, val);
+              else PubSub.publish(event, [prop, val]);
+            });
+          }
+          resolve();
+        }
+        catch( e ){
+          reject(e);
+        }
+      });
+    })
+  };
+
+  /**
    * create an observed proxy backed by a file.
    * 
    * @param {object} o root object 
-   * @param {string} path 
+   * @param {string} file 
    * @param {*} event name for pubsub or event callback function
    */
-  static createFileStorageProxy(o, path, event, pretty){
+  static createFileStorageProxy(o, file, event, opts){
 
-    let saveLock = false;
+    opts = opts || {};
+    Object.defineProperty( o, "__saving__", { enumerable: false, configurable: true, writable: true, value: false });
+
     let saveTimer = null;
 
     let save = function(data){
 
       let actualSave = function(){
-        saveLock = true;
-        // console.info( "Actual save" );
-        let json = JSON.stringify(data, undefined, pretty ? 3 : undefined);
-        fs.writeFile(path, json, function(err){
+        o.__saving__ = true;
+        let json = JSON.stringify(data, undefined, opts.pretty ? 2 : undefined);
+        console.info( "Actual save", json );
+        fs.writeFile(file, json, function(err){
           if( err ) console.error( err );
-          saveLock = false;
+          setTimeout( function(){
+            o.__saving__ = false;
+          }, 100);
         });
       }
 
       let checkSave = function(){
-        if( !saveLock ){
+        if( !o.__saving__ ){
           actualSave();
         }
         else if( !saveTimer ){
@@ -238,7 +323,7 @@ class Model {
 
     let restore = function(){
       try {
-        let data = fs.readFileSync( path, "utf8" );
+        let data = fs.readFileSync( file, "utf8" );
         if( data ) return JSON.parse(data);
       }
       catch(e){ console.error(e); }
