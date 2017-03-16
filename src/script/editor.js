@@ -254,14 +254,19 @@ class Editor {
     PubSub.subscribe( "file-change-event", function( channel, file ){
       let tabs = instance._nodes['editor-header'].querySelectorAll( ".editor-tab" );
       tabs.forEach( function( tab ){
+
         if( tab.opts.file === file ){
-          if( !tab.opts.dirty ){
-            console.info( file, "changed, reloading" );
+          if( instance._saving === file ){
+            instance._saving = undefined;
+          }
+          else if( !tab.opts.dirty ){
+            console.info( file, "changed on disk, reloading" );
             instance._revert(tab);
           }
           else {
             // FIXME
             console.info( file, "changed, NOT reloading because unsaved changes" );
+            tab.opts.preventSave = true;
           }
         }
       });
@@ -811,6 +816,15 @@ class Editor {
     tab = this._checkIndexTab(tab);
     let file = tab.opts.file;
 
+    if( !saveAs && tab.opts.preventSave ){
+      dialog.showMessageBox({
+        title: Messages.FILE_CHANGED_WARNING.TITLE,
+        message: Messages.FILE_CHANGED_WARNING.MESSAGE,
+        detail: Messages.FILE_CHANGED_WARNING.DETAIL
+      });
+      saveAs = true;
+    }
+
     if( saveAs || !file ){
 
       saveAs = true; 
@@ -849,10 +863,11 @@ class Editor {
 
       if( err ){
         PubSub.publish( "file-write-error", { err: err, file: editor.path });
-        this._saving = undefined;
+        instance._saving = undefined;
         return;
       }
 
+      tab.opts.preventSave = false;
       tab.opts.dirty = false;
       tab.opts.baseAVID = tab.opts.model.getAlternativeVersionId();
       tab.classList.remove( "dirty" );
@@ -881,7 +896,8 @@ class Editor {
 
       }
 
-      this._saving = undefined;
+      // don't do this here.  wait for the event notification.
+      // instance._saving = undefined;
 
     })
     
@@ -899,6 +915,7 @@ class Editor {
       return;
     }
 
+    let vs = ( this._activeTab === tab ) ? this._editor.saveViewState() : null;
     let instance = this;
 
     return new Promise( function( resolve, reject ){
@@ -917,6 +934,8 @@ class Editor {
           tab.opts.dirty = false;
           tab.opts.baseAVID = tab.opts.model.getAlternativeVersionId();
           tab.classList.remove( "dirty" );          
+
+          if(vs) instance._editor.restoreViewState(vs);
 
         }
         resolve();

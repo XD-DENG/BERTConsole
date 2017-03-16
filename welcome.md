@@ -10,7 +10,7 @@ A couple of key things to know:
    either edit that file or add a new file to the startup folder.
    
  * Any time you add a new file or change a file in the startup 
-   folder, BERT will reload it automatically. 
+   folder, BERT will load (or reload) it automatically. 
 
  * The R shell is "live" and connected to Excel -- see the docs on 
    Talking to Excel from R, and the Excel Scripting (COM) Interface.

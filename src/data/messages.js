@@ -122,6 +122,14 @@ module.exports = {
     REPLACE_ONE: "Replace One",
     REPLACE_ALL: "Replace All",
 
+    // warning
+
+    FILE_CHANGED_WARNING: {
+      TITLE: "Save Warning",
+      MESSAGE:"This file has changed on disk.",
+      DETAIL: "To avoid losing data, you should save this file with a different name."
+    }
+
   }
 
 };

@@ -39,6 +39,8 @@ const { Utils } = require( "./util2.js" );
 const PipeR = require( "./piper.js" );
 const ProgressBarManager = require( "./progressbar.js" );
 const CRAN = require( "./cran.js" );
+const UpdateCheck = require( "./update-check.js" );
+window.UpdateCheck = UpdateCheck;
 
 const Messages = require( "../data/messages.js" ).Main;
 const ApplicationMenus = require( "../data/menus.js" );
@@ -434,15 +436,15 @@ const init_shell = function(container){
     if( !lines.length ) return;
 
     if( lines.length === 1 && !lines[0].length 
-        && shell_callbacks.last_parse_status === Shell.prototype.PARSE_STATUS.OK ){
+        && last_parse_status === Shell.prototype.PARSE_STATUS.OK ){
       callback();
       return;
     }
 
     R.exec( lines ).then( function( rslt ){
-      shell_callbacks.last_parse_status = Shell.prototype.PARSE_STATUS.OK;
+      last_parse_status = Shell.prototype.PARSE_STATUS.OK;
       if( rslt.parsestatus === 2 ){
-        rslt.parsestatus = shell_callbacks.last_parse_status = Shell.prototype.PARSE_STATUS.INCOMPLETE;
+        rslt.parsestatus = last_parse_status = Shell.prototype.PARSE_STATUS.INCOMPLETE;
       }
       callback( rslt );
     }).catch( function( err ){
@@ -819,6 +821,15 @@ PubSub.subscribe( "splitter-resize", function(channel, data){
 PubSub.subscribe( "settings-change", function( channel, data ){
   switch( data[0] ){
 
+  case "layout.split.0":
+  case "layout.split.1":
+    split.setSizes( settings.layout.split[0], settings.layout.split[1] );
+    editor.layout();
+    shell.refresh();
+    resizeShell();
+    spinner.update();
+    return;
+    
   case "shell.wrap":
     shell.setOption("lineWrapping", settings.shell.wrap);
     spinner.update();
