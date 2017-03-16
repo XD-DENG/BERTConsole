@@ -388,28 +388,21 @@ const download_file = function(opts){
 		
 };
 
-/**
- * consolidating shell callback functions. also hold some state.
- */
-const shell_callbacks = {
+const init_shell = function(container){
 
-  tip: function (text, pos) {
+  // shell callback functions
+
+  const tip_callback = function (text, pos) {
     if (settings.shell && settings.shell['hide-function-tips']) return;
     R.internal([ "autocomplete", text, pos ], "autocomplete").then(function (obj) {
       if (obj['signature'])  shell.show_function_tip(obj['signature']);
       else shell.hide_function_tip();
     }).catch(function (e) {
-
-      // generally speaking we can ignore this, although
-      // we probably need some filter... for now we will ignore
-
-      // FIXME: debug?
-      // console.error(e);
-
+      // console.error(e); // FIXME: debug?
     });
-  },
+  };
 
-  hint: function (text, pos, callback) {
+  const hint_callback = function (text, pos, callback) {
 
     // escape both single and double quotes
     text = text.replace(/"/g, "\\\"");
@@ -424,14 +417,14 @@ const shell_callbacks = {
       else callback();
     }).catch(function (obj) { callback(); });
 
-  },
+  };
 
   // FIXME: why keep this here instead of in the state variable
   // (which should represent all state)?
 
-  last_parse_status: Shell.prototype.PARSE_STATUS.OK,
+  let last_parse_status = Shell.prototype.PARSE_STATUS.OK;
 
-  exec: function( lines, callback ){
+  const exec_callback = function( lines, callback ){
 
     if( !R.initialized ){
       shell.response( "Not connected\n", "shell-error" );
@@ -457,11 +450,7 @@ const shell_callbacks = {
       callback( err );
     })
 
-  }
-
-};
-
-const init_shell = function(container){
+  };
 
   // initialize shell
   container.classList.add( "shell" );
@@ -470,10 +459,9 @@ const init_shell = function(container){
     container: container,
     cursorBlinkRate: 0,
     mode: "r",
-    hint_function: shell_callbacks.hint,
-    tip_function: shell_callbacks.tip,
-    exec_function: shell_callbacks.exec,
-    //function_key_callback: function_key_callback,
+    hint_function: hint_callback,
+    tip_function: tip_callback,
+    exec_function: exec_callback,
     suppress_initial_prompt: true,
     viewport_change: function () {
       PubSub.publish("viewport-change");
@@ -569,7 +557,7 @@ const init_r = function(){
 // fields and initialization 
 //
 
-let settingsFile = "bert-shell-2-settings.json";
+let settingsFile = "bert-console-3-settings.json";
 if( process.env.BERT_SHELL_HOME ) settingsFile = path.join( process.env.BERT_SHELL_HOME, settingsFile );
 else settingsFile = path.join( __dirname, "../../", settingsFile );
 
@@ -607,7 +595,7 @@ let settings = Model.createFileStorageProxy({
     lineNumbers: true,
     statusBar: true,
     tabSize: 2,
-    insertSpaces: false    
+    insertSpaces: true
   }
 }, settingsFile, "settings-change", { pretty: true });
 

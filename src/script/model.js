@@ -294,7 +294,7 @@ class Model {
       let actualSave = function(){
         o.__saving__ = true;
         let json = JSON.stringify(data, undefined, opts.pretty ? 2 : undefined);
-        console.info( "Actual save", json );
+        // console.info( "Actual save", json );
         fs.writeFile(file, json, function(err){
           if( err ) console.error( err );
           setTimeout( function(){
@@ -326,7 +326,10 @@ class Model {
         let data = fs.readFileSync( file, "utf8" );
         if( data ) return JSON.parse(data);
       }
-      catch(e){ console.error(e); }
+      catch(e){ 
+        console.warn( "settings file not found, using defaults" );
+        // console.warn(e); 
+      }
       return {};
     }
 

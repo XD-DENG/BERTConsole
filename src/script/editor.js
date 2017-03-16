@@ -37,6 +37,7 @@ const {Menu, MenuItem, dialog} = remote;
 
 const { Utils } = require( "./util2.js" );
 const { Model } = require( "./model.js" );
+const Watcher = require( "./watcher.js" );
 
 const Messages = require( "../data/messages.js" ).Editor;
 
@@ -100,10 +101,15 @@ class Editor {
     // options passed to created models
     this._modelOptions = {};
 
+    // flag to prevent save/reload loop
+    this._saving = undefined;
+
     // file settings backed by local storage (open files, recent files)
     this._fileSettings = Model.createLocalStorageProxy({
       recentFiles: []
     }, "file-settings", "file-settings-update" );
+    
+    window.model = this._fileSettings;
 
   }
 
@@ -243,6 +249,22 @@ class Editor {
 
     window.addEventListener( "resize", function(){
       instance.layout();
+    });
+
+    PubSub.subscribe( "file-change-event", function( channel, file ){
+      let tabs = instance._nodes['editor-header'].querySelectorAll( ".editor-tab" );
+      tabs.forEach( function( tab ){
+        if( tab.opts.file === file ){
+          if( !tab.opts.dirty ){
+            console.info( file, "changed, reloading" );
+            instance._revert(tab);
+          }
+          else {
+            // FIXME
+            console.info( file, "changed, NOT reloading because unsaved changes" );
+          }
+        }
+      });
     });
 
     PubSub.subscribe( "menu-click", function( channel, data ){
@@ -491,6 +513,7 @@ class Editor {
           loadNext().then( function(){
             removePlaceholder();
             instance._selectTab(instance._fileSettings.activeTab || 0);
+            instance._updateOpenFiles(); // this cleans up any files that couldn't be opened
           })
         }
         else {
@@ -580,7 +603,10 @@ class Editor {
     }
 
     // for unclosing. FIXME: cap?
-    if( tab.opts.file ) this._closedTabs.unshift( tab.opts.file );
+    if( tab.opts.file ){
+      this._closedTabs.unshift( tab.opts.file );
+      Watcher.unwatch( tab.opts.file );
+    }
 
     if( this._activeTab === tab ){
 
@@ -817,13 +843,13 @@ class Editor {
     let contents = tab.opts.model.getValue();
     let instance = this;
 
-    // TODO: stop any watchers
-    // ignoreChanges = editor.path;
+    this._saving = file;
 
     fs.writeFile( file, contents, { encoding: "utf8" }, function(err){
 
       if( err ){
         PubSub.publish( "file-write-error", { err: err, file: editor.path });
+        this._saving = undefined;
         return;
       }
 
@@ -836,7 +862,10 @@ class Editor {
 
       if( saveAs ){
 
+        if( tab.opts.file ) Watcher.unwatch( tab.opts.file );
         tab.opts.file = file;
+        Watcher.watch( tab.opts.file );
+
         let label = tab.querySelector( ".label" );
         label.setAttribute( "title", file );
         label.textContent = path.basename(file);
@@ -852,8 +881,8 @@ class Editor {
 
       }
 
-      // TODO: reset watchers
-      // ignoreChanges = null;
+      this._saving = undefined;
+
     })
     
   }
@@ -922,6 +951,7 @@ class Editor {
 
         }
         else {
+          Watcher.watch( file );
           instance._addTab({ file: file, value: contents }, toll);
           /*
           watchFile( file );
