@@ -109,7 +109,19 @@ class Editor {
       recentFiles: []
     }, "file-settings", "file-settings-update" );
     
-    window.model = this._fileSettings;
+    // default files on first open
+    if( !this._fileSettings.once ){
+      this._fileSettings.__broadcast__ = false;
+      this._fileSettings.openFiles = [
+        path.join( process.env.BERT_SHELL_HOME, "welcome.md" ),
+        path.join( process.env.BERT_FUNCTIONS_DIRECTORY, "functions.R" ),
+        path.join( process.env.BERT_FUNCTIONS_DIRECTORY, "../examples/excel-scripting.R" )
+      ];
+      this._fileSettings.once = true;
+      this._fileSettings.__broadcast__ = true;
+    }
+
+    // window.model = this._fileSettings;
 
   }
 
@@ -195,6 +207,26 @@ class Editor {
   init(container, options){
 
     options = options || {};
+    let instance = this;
+
+    function handleDragover(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+
+    function handleDrop(e){
+      e.stopPropagation();
+      e.preventDefault();
+      let files = e.dataTransfer.files;
+      if( files && files.length ){
+        instance.open( files[0].path );
+      }
+    }
+
+    container.addEventListener('dragenter', handleDragover, false);
+    container.addEventListener('dragover', handleDragover, false);
+    container.addEventListener('drop', handleDrop, false);
 
     let editorHTML = `
       <div id='editor-container'>
@@ -216,7 +248,6 @@ class Editor {
 
     this._nodes = Utils.parseHTML( editorHTML, container );
 
-    let instance = this;
 
     PubSub.subscribe( "editor-cursor-position-change", function(channel, data){
       instance._nodes['editor-info-position'].textContent = 

@@ -536,10 +536,6 @@ const init_r = function(){
     R.init({ pipename: pipename });
 
     window.addEventListener("beforeunload", function (event) {
-
-
-      console.info( "M", global.__quit, global.allowReload );
-
       if( global.__quit || global.allowReload ) return;
       event.returnValue = false;
       R.internal( ["hide"], "hide" );
@@ -754,7 +750,7 @@ editor.init( split.panes[0], editorOptions ).then( function(){
   let availableVersion = Utils.encode_version(settings.update['last-version']);
   let notifyVersion = Utils.encode_version(settings.update['notify-version']);
 
-  console.info( "CV", currentVersion, "AV", availableVersion, "NV", notifyVersion );
+  // console.info( "CV", currentVersion, "AV", availableVersion, "NV", notifyVersion );
 
   if( availableVersion <= currentVersion || availableVersion === notifyVersion) return;
   Notifier.notify({ 
