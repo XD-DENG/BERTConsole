@@ -865,7 +865,7 @@ class Editor {
         console.error( err );
         PubSub.publish( "error", { 
           className: "error",
-          title: 'File write error',
+          title: Messages.FILE_WRITE_ERROR,
           body: file,
           'original-error': err, 
           file: file 
@@ -931,7 +931,7 @@ class Editor {
         if( err ){
           console.error( err );
           PubSub.publish( "error", {
-            title: "File read error", 
+            title: Messages.FILE_READ_ERROR, 
             className: "error",
             body: tab.opts.file,  
             'original-error': err, 
@@ -969,7 +969,7 @@ class Editor {
         if( err ){
           console.error( err );
           PubSub.publish( "error", {
-            title: "File read error", 
+            title: Messages.FILE_READ_ERROR,
             className: "error",
             body: file,  
             'original-error': err, 

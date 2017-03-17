@@ -122,6 +122,11 @@ module.exports = {
     REPLACE_ONE: "Replace One",
     REPLACE_ALL: "Replace All",
 
+    // errors
+
+    FILE_READ_ERROR: "File read error", 
+    FILE_WRITE_ERROR: "File write error",
+
     // warning
 
     FILE_CHANGED_WARNING: {
