@@ -1,5 +1,15 @@
 
+/**
+ * Both the editor and shell are styleable, although you may have 
+ * to poke around a bit to find class names or IDs (use the developer
+ * tools under View > Developer). Here are some basic examples.  
+ *
+ * The BERT console will watch this file, so to try a style change 
+ * just uncomment a section and save the file.
+ */
+
 /** swap left and right (or top and bottom) panels: */
+
 /*
 .split-pane:nth-child(2) { order: 0; }
 .splitter { order: 1; }
@@ -7,6 +17,7 @@
 */
 
 /** use a web font in the shell: */
+
 /*
 @import 'https://fonts.googleapis.com/css?family=Fira+Mono:400,700';
 .shell pre {
@@ -14,19 +25,42 @@
   font-size: 10pt; 
 }
 */
-  #package-chooser .dialog-header-form input {
-    height: 100%;
-    border: 1px solid #66a;
-    border-radius: 2px;
-    margin: 0;
-    padding: 0;
-    padding-left: .5em;
-    top: 0px;
-    position: absolute;
-    font-family: inherit;
-  }
 
-.package-chooser-version {
-  color: #999;
-  padding-left: .5em;
+/** some exposed classes in the monaco editor: */
+
+/*
+.monaco-editor, .monaco-editor-background {
+	background: #EDF9FA;
 }
+
+.monaco-editor .cursor {
+	background: darkred !important;
+}
+
+.monaco-editor .current-line {
+	background: rgba(0, 0, 255, 0.1);
+}
+
+.monaco-editor .lines-decorations {
+	background-color: #EDF9FA;
+}
+*/
+
+/** text selections (lighter when not focused): */
+
+/*
+.monaco-editor .view-overlays.focused .selected-text {
+	background: rgba(128, 0, 0, 0.2) !important;
+}
+.monaco-editor .view-overlays .selected-text {
+	background: rgba(128, 0, 0, 0.1) !important;
+}
+*/
+
+/**
+ * don't change the editor font using the stylesheet.  it's 
+ * possible, but it will break some editor layout functions.
+ * instead, open the BERT console options file and set the 
+ * option editor.fontFamily (and optionally editor.fontSize).
+ */
+

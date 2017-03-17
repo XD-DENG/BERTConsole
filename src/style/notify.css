@@ -1,0 +1,96 @@
+
+.notifier-panel {
+  z-index: 1000;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.notifier-panel .notifier-message {
+  background: rgba( 255, 255, 255, .95 );
+  border-radius: 1px;
+  margin: 5px;
+  width: 70%;
+  transition: opacity .2s;
+  opacity: 0;
+  box-shadow: 0px 1px 4px #333;
+  display: flex;
+  height: 40px;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 1em;
+}
+
+.notifier-panel .notifier-message, .notifier-panel .notifier-message div {
+  cursor: pointer;
+}
+
+.notifier-panel .notifier-message > div {
+  display: inline-block;
+}
+
+.notifier-panel .notifier-message > div + div {
+  padding-left: .4em;
+}
+
+.notifier-panel .notifier-message .notifier-body {
+  flex-grow: 1;  
+  white-space: nowrap;
+}
+
+.notifier-panel .notifier-title {
+  font-weight: 600;
+}
+
+.notifier-panel .notifier-message .notifier-title {
+  position: relative;
+}
+
+.notifier-panel .notifier-message.error .notifier-icon:before {
+  content: '!';
+  background: red;
+}
+
+.notifier-panel .notifier-message.warning .notifier-icon:before {
+  content: '!';
+  background: orange;
+}
+
+.notifier-panel .notifier-message.information .notifier-icon:before {
+  content: 'i';
+  background: blue;
+}
+
+.notifier-panel .notifier-message.question .notifier-icon:before {
+  content: '?';
+  background: green;
+}
+
+.notifier-panel .notifier-message .notifier-icon:before {
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  text-align: center;
+  position: relative;
+  display: inline-block;
+  margin-right: .2em;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: .6em;
+  line-height: 1.1;
+}
+
+.notifier-panel .notifier-link {
+  padding: 0 .35em;
+  display: inline-block;
+  color: #333;
+}
+
+.notifier-panel .notifier-link:hover {
+  text-decoration: underline;
+}
