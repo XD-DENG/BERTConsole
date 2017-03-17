@@ -109,14 +109,16 @@ class Editor {
       recentFiles: []
     }, "file-settings", "file-settings-update" );
     
-    // default files on first open
+    // default files on first open.  push these into recent as well.  the 
+    // flag controls when this happens.
     if( !this._fileSettings.once ){
       this._fileSettings.__broadcast__ = false;
       this._fileSettings.openFiles = [
-        path.join( process.env.BERT_SHELL_HOME, "welcome.md" ),
-        path.join( process.env.BERT_FUNCTIONS_DIRECTORY, "functions.R" ),
-        path.join( process.env.BERT_FUNCTIONS_DIRECTORY, "../examples/excel-scripting.R" )
+        path.join( process.env.BERT_SHELL_HOME || "", "welcome.md" ),
+        path.join( process.env.BERT_FUNCTIONS_DIRECTORY || "", "functions.R" ),
+        path.join( process.env.BERT_FUNCTIONS_DIRECTORY || "", "../examples/excel-scripting.R" )
       ];
+      this._fileSettings.recentFiles = this._fileSettings.openFiles.slice(0);
       this._fileSettings.once = true;
       this._fileSettings.__broadcast__ = true;
     }

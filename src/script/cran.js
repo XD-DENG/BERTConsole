@@ -153,13 +153,16 @@ const showPackageChooserInternal = function(R, settings, cran){
 
       name.innerText = data[0];
 
+      //let version = node.querySelector( '.package-chooser-version' );
+      //version.innerText = data[1];
+
     };
 
     // base template (FIXME: move to html file) 
     let nodetemplate = `
       <div class='package-chooser-entry'>
         <div class='chooser-checkbox'>
-            <label class='package-chooser-name'></label>
+          <label class='package-chooser-name'></label>
         </div>
       </div>
     `;
@@ -196,7 +199,7 @@ const showPackageChooserInternal = function(R, settings, cran){
       }
 
       // next get list of available packages (unless we have cache)
-      let p = data ? Promise.resolve(data) : R.internal([ "exec", "available.packages()" ], "package-chooser");
+      let p = data ? Promise.resolve(data) : R.internal([ "exec", "available.packages()[,1:2]" ], "package-chooser");
       p.then( function( obj ){
 
         if( obj.type === "response" ){

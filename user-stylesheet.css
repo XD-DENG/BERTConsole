@@ -25,3 +25,8 @@
     position: absolute;
     font-family: inherit;
   }
+
+.package-chooser-version {
+  color: #999;
+  padding-left: .5em;
+}

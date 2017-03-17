@@ -128,6 +128,12 @@
 
 .package-chooser-entry {
   padding: .75em 1em;
+  display: flex;
+  flex-direction: row;
+}
+
+.package-chooser-version {
+  color: #666;
 }
 
 .vlist-list-entry:nth-child(even) .package-chooser-entry {
