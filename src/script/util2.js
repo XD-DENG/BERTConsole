@@ -31,6 +31,25 @@ class Utils {
   }
 
   /**
+   * encode version as an integer.  we're transitioning from major.minor to 
+   * major.minor.patch which makes this a little more complicated. if there's
+   * no patch version, consider that a zero.  this is encoded as 
+   * 
+   * 1000 * 1000 * major + 1000 * minor + patch
+   * 
+   * that implies you should not have > 1000 minor or patch versions.  probably
+   * a safe assumption.
+   * 
+   * returns a >= b
+   */
+  static encode_version( v ){
+    let parts = (v||"").split(".");
+    return Number(parts[0] || 0) * 1000 * 1000 +
+      Number(parts[1] || 0) * 1000 +
+      Number(parts[2] || 0);
+  }
+
+  /**
    * set a deep value by reference.  optionally create the hierarchy.
    * note that creating will only create objects, not arrays.
    * 

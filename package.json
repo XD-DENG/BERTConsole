@@ -1,6 +1,6 @@
 {
   "description": "BERT Console",
-  "name": "bert-console",
+  "name": "bert-shell",
   "version": "3.2.0",
   "main": "index.js",
   "license": "MIT",

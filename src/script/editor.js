@@ -862,7 +862,15 @@ class Editor {
     fs.writeFile( file, contents, { encoding: "utf8" }, function(err){
 
       if( err ){
-        PubSub.publish( "file-write-error", { err: err, file: editor.path });
+        console.error( err );
+        PubSub.publish( "error", { 
+          className: "error",
+          title: 'File write error',
+          body: file,
+          'original-error': err, 
+          file: file 
+        });
+
         instance._saving = undefined;
         return;
       }
@@ -922,8 +930,10 @@ class Editor {
       fs.readFile( tab.opts.file, { encoding: 'utf8' }, function( err, contents ){
         if( err ){
           console.error( err );
-          PubSub.publish( "error", { 
-            error: `Error reading file: ${tab.opts.file}`,
+          PubSub.publish( "error", {
+            title: "File read error", 
+            className: "error",
+            body: tab.opts.file,  
             'original-error': err, 
             file: file 
           });
@@ -958,8 +968,10 @@ class Editor {
       fs.readFile( file, { encoding: 'utf8' }, function( err, contents ){
         if( err ){
           console.error( err );
-          PubSub.publish( "error", { 
-            error: `Error reading file: ${file}`,
+          PubSub.publish( "error", {
+            title: "File read error", 
+            className: "error",
+            body: file,  
             'original-error': err, 
             file: file 
           });

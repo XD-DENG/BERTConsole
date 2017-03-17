@@ -7,12 +7,21 @@
 */
 
 /** use a web font in the shell: */
-
+/*
 @import 'https://fonts.googleapis.com/css?family=Fira+Mono:400,700';
 .shell pre {
   font-family: 'Fira Mono', monospace;
   font-size: 10pt; 
 }
-
-
-
+*/
+  #package-chooser .dialog-header-form input {
+    height: 100%;
+    border: 1px solid #66a;
+    border-radius: 2px;
+    margin: 0;
+    padding: 0;
+    padding-left: .5em;
+    top: 0px;
+    position: absolute;
+    font-family: inherit;
+  }

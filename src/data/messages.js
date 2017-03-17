@@ -51,7 +51,7 @@ module.exports = {
     // specific to the update available message
 
     UPDATE_AVAILABLE: "Version $1 is available",
-    DOWNLOAD: "Download update",
+    DOWNLOAD: "Download page",
     IGNORE: "Don't notify me again",
 
     // general buttons

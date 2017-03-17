@@ -40,7 +40,8 @@ const PipeR = require( "./piper.js" );
 const ProgressBarManager = require( "./progressbar.js" );
 const CRAN = require( "./cran.js" );
 const UpdateCheck = require( "./update-check.js" );
-window.UpdateCheck = UpdateCheck;
+const Notifier = require( "./notify.js" );
+window.Notifier = Notifier;
 
 const Messages = require( "../data/messages.js" ).Main;
 const ApplicationMenus = require( "../data/menus.js" );
@@ -535,6 +536,10 @@ const init_r = function(){
     R.init({ pipename: pipename });
 
     window.addEventListener("beforeunload", function (event) {
+
+
+      console.info( "M", global.__quit, global.allowReload );
+
       if( global.__quit || global.allowReload ) return;
       event.returnValue = false;
       R.internal( ["hide"], "hide" );
@@ -742,7 +747,36 @@ let editorOptions = Utils.clone(settings.editor || {}); // fixme: defaults here?
 
 editor.init( split.panes[0], editorOptions ).then( function(){
   Utils.layoutCSS();
-})
+  return UpdateCheck.checkForUpdates(settings, false);
+}).then( function(){
+  
+  let currentVersion = Utils.encode_version(process.env.BERT_VERSION || "1.20" );
+  let availableVersion = Utils.encode_version(settings.update['last-version']);
+  let notifyVersion = Utils.encode_version(settings.update['notify-version']);
+
+  console.info( "CV", currentVersion, "AV", availableVersion, "NV", notifyVersion );
+
+  if( availableVersion <= currentVersion || availableVersion === notifyVersion) return;
+  Notifier.notify({ 
+    className: "information",
+    title: Utils.templateString( Messages.UPDATE_AVAILABLE, settings.update['last-version']), 
+    body: "", 
+    footer: `<a class='notifier-link' data-command='download'>${Messages.DOWNLOAD}</a> <a class='notifier-link' data-command='ignore'>${Messages.IGNORE}</a>`, 
+    timeout: 10
+  }).then( function(reason){
+    if( reason.event && reason.event.target ){
+      let cmd = reason.event.target.getAttribute( "data-command" );
+      switch( cmd ){
+      case "download":
+        window.require('electron').shell.openExternal('https://bert-toolkit.com/download-bert?from-version=' + process.env.BERT_VERSION );
+        break;
+      case "ignore":
+        settings.update['notify-version'] = settings.update['last-version'];
+        break;
+      };
+    }
+  });
+});
 
 init_shell( split.panes[1] );
 init_r();
@@ -781,6 +815,10 @@ window.addEventListener( "keydown", function(e){
     // else { console.info( e.code ); window.e = e; }
     return;
   }
+});
+
+PubSub.subscribe( "error", function( channel, data ){
+  Notifier.notify( data );
 });
 
 PubSub.subscribe( "update-menu", function( channel, data ){
