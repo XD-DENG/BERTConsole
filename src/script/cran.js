@@ -323,7 +323,7 @@ module.exports.showMirrorChooser = function(R, settings){
       chooser.nodes['mirror-chooser-wait'].style.display = "block";
       chooser.nodes['mirror-chooser-list'].style.display = "none";
 
-      chooser.nodes['checkbox-show-http'].checked = show_http;
+      chooser.nodes['checkbox-hide-http'].checked = !show_http;
 
       // update the filter, update or potentially create the list 
       let updateFilter = function(http){
@@ -363,7 +363,7 @@ module.exports.showMirrorChooser = function(R, settings){
           if( n.className === 'dialog-checkbox' ){
             let cb = n.querySelector( "input[type=checkbox]" );
             cb.checked = !cb.checked; 
-            updateFilter( cb.checked );
+            updateFilter( !cb.checked );
             return;
           }
           n = n.parentNode;
