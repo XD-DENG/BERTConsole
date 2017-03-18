@@ -125,24 +125,26 @@ const VList = function( parent, data, template, update, options ){
   };
 
   let keyFunction = function(e){
+    let delta = 0;
     switch(e.key){
     case "ArrowDown":
-      parent.parentNode.scrollTop += size.height;
+      delta = size.height;
       break;
     case "ArrowUp":
-      parent.parentNode.scrollTop -= size.height;
+      delta = -size.height;
       break;
     case "PageDown":
-      parent.parentNode.scrollTop += parent.parentNode.offsetHeight;
+      delta = parent.parentNode.offsetHeight;
       break;
     case "PageUp":
-      parent.parentNode.scrollTop -= parent.parentNode.offsetHeight;
+      delta = -parent.parentNode.offsetHeight;
       break;
     default:
       return;
     }
     e.stopPropagation();
     e.preventDefault();
+    parent.parentNode.scrollTop += delta;
   }
 
   window.addEventListener( "keydown", keyFunction );

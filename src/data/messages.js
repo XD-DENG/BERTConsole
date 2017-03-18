@@ -104,6 +104,15 @@ module.exports = {
     CONTEXT_EXECUTE_SELECTED_CODE: 'Execute selected code',
     CONTEXT_EXECUTE_BUFFEER: 'Execute entire file',
 
+    // save before closing?
+
+    CHECK_SAVE_YES: "Yes",
+    CHECK_SAVE_NO: "No", 
+    CHECK_SAVE_CANCEL: "Cancel",
+    CHECK_SAVE_DIALOG_TITLE: "Close File", 
+    CHECK_SAVE_DIALOG_MESSAGE: "Your file has unsaved changes.\nClick Yes to save, No to close without saving.",
+    CHECK_SAVE_DIALOG_DETAIL: "If you accidentally close a file without saving, use Ctrl+T to recover it.",
+
     // file dialog
 
     R_FILES_PATTERN: 'R Files',

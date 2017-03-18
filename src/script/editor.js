@@ -41,6 +41,8 @@ const Watcher = require( "./watcher.js" );
 
 const Messages = require( "../data/messages.js" ).Editor;
 
+const MAX_UNCLOSED_TABS = 8; // ??
+
 //-----------------------------------------------------------------------------
 //
 // configuration for monaco (see monaco electron sample)
@@ -624,7 +626,9 @@ class Editor {
       console.warn( "Unclose tab: nothing on stack" );
       return;
     }
-    this.open(this._closedTabs.shift());
+    // this.open(this._closedTabs.shift());
+    let opts = this._closedTabs.shift();
+    this._addTab(opts);
   }
 
   /**
@@ -635,15 +639,46 @@ class Editor {
 
     tab = this._checkIndexTab(tab);
 
-    // FIXME: unsaved changes?
     if( tab.opts.dirty ){
-      console.warn( "Closing tab with unsaved changes" );
+       let rslt = dialog.showMessageBox(null, {
+        buttons: [
+          Messages.CHECK_SAVE_YES, 
+          Messages.CHECK_SAVE_NO, 
+          Messages.CHECK_SAVE_CANCEL
+        ],
+        defaultId: 0, 
+        title: Messages.CHECK_SAVE_DIALOG_TITLE,
+        message: Messages.CHECK_SAVE_DIALOG_MESSAGE,
+        detail: Messages.CHECK_SAVE_DIALOG_DETAIL
+      });
+
+      if( rslt === 2 ) return; // cancel
+      else if( rslt === 0 ){
+        let instance = this;
+        instance._save(tab).then( function(){
+          instance._closeTab(tab);
+        });
+        return;
+      }
     }
 
     // for unclosing. FIXME: cap?
+    /*
     if( tab.opts.file ){
       this._closedTabs.unshift( tab.opts.file );
       Watcher.unwatch( tab.opts.file );
+    }
+    */
+
+    if( tab.opts.file ){
+      Watcher.unwatch( tab.opts.file );
+    }
+    this._closedTabs.unshift(tab.opts);
+    if( this._closedTabs.length > MAX_UNCLOSED_TABS ){
+      let x = this._closedTabs.splice(MAX_UNCLOSED_TABS, 1);
+      x.forEach( function( opts ){
+        if( opts.model ) opts.model.dispose();
+      });
     }
 
     if( this._activeTab === tab ){
@@ -667,7 +702,7 @@ class Editor {
     tab.parentNode.removeChild(tab);
 
     // clean up resources
-    if( tab.opts.model ) tab.opts.model.dispose();
+    // if( tab.opts.model ) tab.opts.model.dispose();
 
     // update
     this._updateOpenFiles();
@@ -759,12 +794,17 @@ class Editor {
     icon.setAttribute( "title", "Close" );
     tab.appendChild( icon );
 
-    // create a model
+    // UPDATING for unclosing, in which case much of this may already be set.
 
-    opts.model = model || monaco.editor.createModel(opts.value, lang);  
-    opts.baseAVID = opts.model.getAlternativeVersionId();
-
+    if( !opts.model ) opts.model = ( model || monaco.editor.createModel(opts.value, lang));
+    if( !opts.baseAVID ) opts.baseAVID = opts.model.getAlternativeVersionId();
+    if( opts.dirty ){
+      tab.classList.add( "dirty" );
+    }
     opts.model.updateOptions( this._modelOptions );
+
+    // we don't need this anymore; don't waste memory
+    delete opts.value;
 
     tab.opts = opts;
     this._nodes['editor-header'].appendChild(tab);
@@ -846,102 +886,107 @@ class Editor {
    */
   _save( tab, saveAs ){
 
-    tab = this._checkIndexTab(tab);
-    let file = tab.opts.file;
-
-    if( !saveAs && tab.opts.preventSave ){
-      dialog.showMessageBox({
-        title: Messages.FILE_CHANGED_WARNING.TITLE,
-        message: Messages.FILE_CHANGED_WARNING.MESSAGE,
-        detail: Messages.FILE_CHANGED_WARNING.DETAIL
-      });
-      saveAs = true;
-    }
-
-    if( saveAs || !file ){
-
-      saveAs = true; 
-      let filters = [];
-      let modeId = tab.opts.model.getModeId();
-      if( modeId === "r" ){
-        filters.push({name: Messages.R_FILES_PATTERN, extensions: ['r', 'rsrc', 'rscript']});
-      }
-      else {
-        if( languageAliases[modeId] ){
-          let extensions = Object.keys(languageExtensions).filter( function( ext ){
-            return languageExtensions[ext] === modeId;
-          }).map( function( ext ){
-            return ext.substring(1);
-          })
-          filters.push({ name: languageAliases[modeId], extensions: extensions });
-        }
-      }
-
-      filters.push({name: Messages.ALL_FILES_PATTERN, extensions: ['*']});
-
-      let rslt = dialog.showSaveDialog({
-        defaultPath: file || "", // Settings.openPath,
-        filters: filters,
-        properties: ['openFile', 'NO_multiSelections']});
-      if( !rslt ) return false;
-      file = rslt;
-    }
-
-    let contents = tab.opts.model.getValue();
     let instance = this;
 
-    this._saving = file;
+    return new Promise( function( resolve, reject ){
 
-    fs.writeFile( file, contents, { encoding: "utf8" }, function(err){
+      tab = instance._checkIndexTab(tab);
+      let file = tab.opts.file;
 
-      if( err ){
-        console.error( err );
-        PubSub.publish( "error", { 
-          className: "error",
-          title: Messages.FILE_WRITE_ERROR,
-          body: file,
-          'original-error': err, 
-          file: file 
+      if( !saveAs && tab.opts.preventSave ){
+        dialog.showMessageBox({
+          title: Messages.FILE_CHANGED_WARNING.TITLE,
+          message: Messages.FILE_CHANGED_WARNING.MESSAGE,
+          detail: Messages.FILE_CHANGED_WARNING.DETAIL
         });
-
-        instance._saving = undefined;
-        return;
+        saveAs = true;
       }
 
-      tab.opts.preventSave = false;
-      tab.opts.dirty = false;
-      tab.opts.baseAVID = tab.opts.model.getAlternativeVersionId();
-      tab.classList.remove( "dirty" );
+      if( saveAs || !file ){
 
-      // if the filename has changed, we need to update the tab, both
-      // data and UI, and potentially change the language as well.
-
-      if( saveAs ){
-
-        if( tab.opts.file ) Watcher.unwatch( tab.opts.file );
-        tab.opts.file = file;
-        Watcher.watch( tab.opts.file );
-
-        let label = tab.querySelector( ".label" );
-        label.setAttribute( "title", file );
-        label.textContent = path.basename(file);
-
-        let ext = (path.extname(file) || "").toLowerCase();
-        let lang = languageExtensions[ext] || "plaintext";
-        if( lang !== tab.opts.model.getModeId()){
-          monaco.editor.setModelLanguage( tab.opts.model, lang )
+        saveAs = true; 
+        let filters = [];
+        let modeId = tab.opts.model.getModeId();
+        if( modeId === "r" ){
+          filters.push({name: Messages.R_FILES_PATTERN, extensions: ['r', 'rsrc', 'rscript']});
+        }
+        else {
+          if( languageAliases[modeId] ){
+            let extensions = Object.keys(languageExtensions).filter( function( ext ){
+              return languageExtensions[ext] === modeId;
+            }).map( function( ext ){
+              return ext.substring(1);
+            })
+            filters.push({ name: languageAliases[modeId], extensions: extensions });
+          }
         }
 
-        instance._updateRecentFiles(file);
-        instance._updateOpenFiles();
+        filters.push({name: Messages.ALL_FILES_PATTERN, extensions: ['*']});
 
+        let rslt = dialog.showSaveDialog({
+          defaultPath: file || "", // Settings.openPath,
+          filters: filters,
+          properties: ['openFile', 'NO_multiSelections']});
+        if( !rslt ) return resolve(false);
+        file = rslt;
       }
 
-      // don't do this here.  wait for the event notification.
-      // instance._saving = undefined;
+      let contents = tab.opts.model.getValue();
+      instance._saving = file;
 
-    })
-    
+      fs.writeFile( file, contents, { encoding: "utf8" }, function(err){
+
+        if( err ){
+          console.error( err );
+          PubSub.publish( "error", { 
+            className: "error",
+            title: Messages.FILE_WRITE_ERROR,
+            body: file,
+            'original-error': err, 
+            file: file 
+          });
+
+          instance._saving = undefined;
+          return resolve(false);
+        }
+
+        tab.opts.preventSave = false;
+        tab.opts.dirty = false;
+        tab.opts.baseAVID = tab.opts.model.getAlternativeVersionId();
+        tab.classList.remove( "dirty" );
+
+        // if the filename has changed, we need to update the tab, both
+        // data and UI, and potentially change the language as well.
+
+        if( saveAs ){
+
+          if( tab.opts.file ) Watcher.unwatch( tab.opts.file );
+          tab.opts.file = file;
+          Watcher.watch( tab.opts.file );
+
+          let label = tab.querySelector( ".label" );
+          label.setAttribute( "title", file );
+          label.textContent = path.basename(file);
+
+          let ext = (path.extname(file) || "").toLowerCase();
+          let lang = languageExtensions[ext] || "plaintext";
+          if( lang !== tab.opts.model.getModeId()){
+            monaco.editor.setModelLanguage( tab.opts.model, lang )
+          }
+
+          instance._updateRecentFiles(file);
+          instance._updateOpenFiles();
+
+        }
+
+        // don't do this here.  wait for the event notification.
+        // instance._saving = undefined;
+
+        resolve(true);
+
+      });
+    });
+
   }
 
   /**
