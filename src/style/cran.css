@@ -134,18 +134,19 @@
   text-transform: none;
   line-height: 1;
   -webkit-font-smoothing: antialiased;
-
-  font-size: 1.1em;
+  content: '\e5ca';
+  display: inline-block;
+  font-size: 1.25em;
   position: relative;
-  padding-right: .5em;
-  color: #666;
-  content: '\ea53';
+  padding-right: .25em;
+  color: transparent;
+  top: 1px;
 }
 
 .dialog-checkbox input[type="checkbox"]:checked + label::before {
-  content: '\ea52';
-  color: #81c4dc;
+  color: #666;
 }
+
 
 
 /* --- package chooser------------------------------------------------------ */

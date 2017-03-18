@@ -71,14 +71,14 @@
   padding: 0;
   color: transparent;
   position: relative;
-  top: 1px;
+  top: 2px;
 }
 
 /* dirty tabs show circles, always visible. */
 .editor-tab.dirty .tab-icon:after {
   content: "\e900";
   color: #333;
-  top: 0px;
+  top: 1px;
   font-size: .75em;
 }
 
@@ -91,7 +91,7 @@
 .editor-tab:hover .tab-icon:hover:after {
   content: "\e5cd"; /* "Cancellation X" */
   font-size: 1.2em;
-  top: 1px;
+  top: 2px;
 }
 
 .editor-flex-patch {
