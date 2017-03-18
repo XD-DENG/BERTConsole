@@ -124,6 +124,29 @@ const VList = function( parent, data, template, update, options ){
     scrollLock = true;
   };
 
+  let keyFunction = function(e){
+    switch(e.key){
+    case "ArrowDown":
+      parent.parentNode.scrollTop += size.height;
+      break;
+    case "ArrowUp":
+      parent.parentNode.scrollTop -= size.height;
+      break;
+    case "PageDown":
+      parent.parentNode.scrollTop += parent.parentNode.offsetHeight;
+      break;
+    case "PageUp":
+      parent.parentNode.scrollTop -= parent.parentNode.offsetHeight;
+      break;
+    default:
+      return;
+    }
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  window.addEventListener( "keydown", keyFunction );
+
   updateAll();
   if( options.firstIndex && options.firstIndex > 1 ){
     window.requestAnimationFrame(function(){
@@ -156,6 +179,7 @@ const VList = function( parent, data, template, update, options ){
   this.cleanup = function(){
     parent.removeEventListener( "scroll", scrollFunction );
     parent.parentNode.removeEventListener( "scroll", scrollFunction );
+    window.removeEventListener( "keydown", keyFunction );
   };
 
 };
