@@ -11,7 +11,7 @@ rm -fr build/*
 rm -fr bert-shell-win32-ia32
 
 # copy
-cp -r ext src theme index.html index.js package.json build/
+cp -r ext src theme index.html index.js package.json yarn.lock build/
 
 # install node modules.  note this is always production.
 cd build
