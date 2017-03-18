@@ -63,32 +63,3 @@
  * instead, open the BERT console options file and set the 
  * option editor.fontFamily (and optionally editor.fontSize).
  */
-
-
-.chooser-checkbox::before {
-
-  font-family: 'icomoon' !important;
-  font-style: normal;
-  font-weight: normal;
-  font-variant: normal;
-  text-transform: none;
-  line-height: 1;
-  -webkit-font-smoothing: antialiased;
-  
-  overflow: hidden;
-  padding: 0;
-  margin: 0;
-  overflow: visible;
-  line-height: 0;
-  position: relative;
-  top: .45em;
-  content: "\e5ca";
-  margin-right: .6em;
-  font-size: 1.25em;
-  color: transparent;
-
-}
-
-.chooser-checkbox.chooser-checkbox-checked::before {
-  color: #333;
-}

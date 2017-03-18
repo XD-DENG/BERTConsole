@@ -29,6 +29,7 @@
   flex-direction: row;
   border-top-right-radius: 3px;
   border-top-left-radius: 3px;
+  min-height: 39px;
 }
 
 .editor-tab.active {
