@@ -1,4 +1,6 @@
 
+@import "../../ext/icomoon/style.css";
+
 @import "main.css";
 @import "editor.css";
 @import "dialog.css";

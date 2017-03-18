@@ -560,11 +560,11 @@ const init_r = function(){
 // fields and initialization 
 //
 
-let settingsFile = "bert-console-3-settings.json";
+let settingsFile = "bs-settings.json";
 if( process.env.BERT_SHELL_HOME ) settingsFile = path.join( process.env.BERT_SHELL_HOME, settingsFile );
 else settingsFile = path.join( __dirname, "../../", settingsFile );
 
-let userStylesheet = "user-stylesheet.css";
+let userStylesheet = "bs-user-stylesheet.css";
 if( process.env.BERT_SHELL_HOME ) userStylesheet = path.join( process.env.BERT_SHELL_HOME, userStylesheet );
 else userStylesheet = path.join( __dirname, "../../", userStylesheet );
 

@@ -13,23 +13,40 @@
 }
 
 .chooser-radio::before {
-  /*
-  padding: .22em .5em;
-  */
-  padding-right: .5em;
+
+  font-family: 'icomoon' !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+
+  padding-right: .75em;
   overflow: hidden;
-  content: "\25CB";
+  content: "\ea56";
   color: #333;
-  font-size: 1.2em;
+  font-size: 1em;
   position: relative;
+  top: 5px;
 }
 
+
 .chooser-radio.chooser-radio-checked::before {
-  content: "\25C9";
+  content: "\ea54";
   color: #4285f4;
 }
 
 .chooser-checkbox::before {
+
+  font-family: 'icomoon' !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  
   overflow: hidden;
   padding: 0;
   margin: 0;
@@ -37,7 +54,7 @@
   line-height: 0;
   position: relative;
   top: .45em;
-  content: "\2713";
+  content: "\e5ca";
   margin-right: .6em;
   font-size: 1.25em;
   color: transparent;
@@ -99,8 +116,9 @@
 
 }
 
+
 .dialog-checkbox {
-  padding: 6px 12px;
+  padding: 12px 12px 6px 12px;
 }
 
 .dialog-checkbox input[type=checkbox] {
@@ -108,16 +126,25 @@
 }
 
 .dialog-checkbox label:before {
-  content: '\2610';
-  font-size: 1.33em;
+
+  font-family: 'icomoon' !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+
+  font-size: 1.1em;
   position: relative;
-  top: 1px;
-  padding-right: .33em;
-  color: #444;
+  padding-right: .5em;
+  color: #666;
+  content: '\ea53';
 }
 
 .dialog-checkbox input[type="checkbox"]:checked + label::before {
-  content: '\2611';
+  content: '\ea52';
+  color: #81c4dc;
 }
 
 

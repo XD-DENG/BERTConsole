@@ -281,7 +281,7 @@ module.exports.showPackageChooser = function(R, settings){
       if( !cran.match( /^http/i )){
 
         // see note where this is set
-        cran = settings.cran.mirror;
+        cran = settings.cran ? settings.cran.mirror : null;
         if( cran ){
           let cmd = `local({r <- getOption("repos"); r["CRAN"] <- "${cran}"; options(repos=r)})`;
           R.internal(['exec', cmd ]).then( function(){

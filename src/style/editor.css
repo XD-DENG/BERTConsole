@@ -55,18 +55,30 @@
 
 /* default to X, and not visible. */
 .editor-tab .tab-icon:after {
-  content: "\1F5D9"; /* "Cancellation X" */
+
+  font-family: 'icomoon';
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+
+  content: "\e5cd";
+  font-size: 1.2em;
+
   padding: 0;
   color: transparent;
   position: relative;
-  top: 0;
+  top: 1px;
 }
 
 /* dirty tabs show circles, always visible. */
 .editor-tab.dirty .tab-icon:after {
-  content: "\25cf"; /* "black circle" */
+  content: "\e900";
   color: #333;
-  top: -1px;
+  top: 0px;
+  font-size: .75em;
 }
 
 /* active tab or hovering, x is visible */
@@ -76,8 +88,9 @@
 
 /* hovering over the icon -- even if dirty -- shows X. */
 .editor-tab:hover .tab-icon:hover:after {
-  content: "\1F5D9"; 
-  top: 0;
+  content: "\e5cd"; /* "Cancellation X" */
+  font-size: 1.2em;
+  top: 1px;
 }
 
 .editor-flex-patch {
