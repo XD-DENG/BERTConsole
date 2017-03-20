@@ -119,7 +119,7 @@ module.exports = {
     ALL_FILES_PATTERN: 'All Files',
 
     // for the editor html template (mostly search)
-
+    /*
     FIND: "Find",
     CASE_SENSITIVE: "Case Sensitive",
     WHOLE_WORD: "Whole Word",
@@ -130,7 +130,8 @@ module.exports = {
     REPLACE: "Replace",
     REPLACE_ONE: "Replace One",
     REPLACE_ALL: "Replace All",
-
+    */
+    
     // errors
 
     FILE_READ_ERROR: "File read error", 
