@@ -1,6 +1,13 @@
 
 module.exports = {
-  
+
+  // editor tab context menu
+
+  EditorTabContext: [
+    { label: 'Close Tab', accelerator: "Ctrl+W", id: 'file-tab-context-close' },
+    { label: 'Close Others', id: 'file-tab-context-close-others' }
+  ],
+
   // shell context menu
 
   ShellContext: [

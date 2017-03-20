@@ -40,6 +40,7 @@ const { Model } = require( "./model.js" );
 const Watcher = require( "./watcher.js" );
 
 const Messages = require( "../data/messages.js" ).Editor;
+const Menus = require( "../data/menus.js" );
 
 const MAX_UNCLOSED_TABS = 8; // ??
 
@@ -69,6 +70,8 @@ self.process.browser = true;
 
 let languageExtensions = {};
 let languageAliases = {};
+
+let atomicID = 100;
 
 /**
  * this is a class, but it's intended to be a singleton; the 
@@ -252,6 +255,26 @@ class Editor {
 
     this._nodes = Utils.parseHTML( editorHTML, container );
 
+    instance._nodes['editor-header'].addEventListener( "contextmenu", function(e){
+      e.stopPropagation();
+      e.preventDefault();
+      let node = e.target;
+      while( node && node.className ){
+        if( node.className.match( /editor-tab/ )){
+          let menu = new Menu();
+          let template = Utils.clone(Menus.EditorTabContext);
+          template.forEach( function( item ){
+            item.tabID = node.atomicID;
+            item.click = function( item ){ PubSub.publish( "menu-click", item )};
+            let mi = new MenuItem(item);
+            menu.append(new MenuItem(item));
+          });
+          let rv = menu.popup(remote.getCurrentWindow());
+          return;
+        }
+        node = node.parentNode;
+      }
+    });
 
     PubSub.subscribe( "editor-cursor-position-change", function(channel, data){
       instance._nodes['editor-info-position'].textContent = 
@@ -309,6 +332,20 @@ class Editor {
 
     PubSub.subscribe( "menu-click", function( channel, data ){
       if( data ) switch( data.id ){
+
+      case "file-tab-context-close":
+        {
+          let tab = instance._getTabByID( data.tabID );
+          if( tab ){ instance._closeTab(tab); }
+        }
+        break;
+
+      case "file-tab-context-close-others":
+        {
+          let tab = instance._getTabByID( data.tabID );
+          if( tab ){ instance._closeOtherTabs(tab); }
+        }
+        break;
 
       case "file-save-as":
         instance._save(instance._activeTab, true);
@@ -583,6 +620,17 @@ class Editor {
   } 
 
   /**
+   * we recently added IDs to tabs.  this is useful.  should be in markup?
+   */
+  _getTabByID(id){
+    let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
+    for( let i = 0; i< tabs.length; i++ ){
+      if( tabs[i].atomicID === id ) return tabs[i];
+    }
+    return null;
+  }
+
+  /**
    * if the passed parameter is an index (a number) then look it 
    * up and return the tab reference.  if the passed parameter is a 
    * string, that's a file path; check and return any matching tab.
@@ -619,7 +667,9 @@ class Editor {
   }
 
   /**
-   * API method: unclose the last-closed tab.  FIXME: restore state?
+   * API method: unclose the last-closed tab.  
+   * FIXME: restore state?
+   * FIXME: watch out for dupes
    */
   uncloseTab(){
     if( !this._closedTabs.length ){
@@ -628,7 +678,68 @@ class Editor {
     }
     // this.open(this._closedTabs.shift());
     let opts = this._closedTabs.shift();
+    if( opts.file )  Watcher.watch( opts.file );
     this._addTab(opts);
+  }
+
+  /** */
+  _closeOtherTabs(tab){
+
+    tab = this._checkIndexTab(tab);
+    let instance = this;
+
+    let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
+    let list = Array.prototype.filter.call(tabs, function( test ){ return test !== tab; })
+    console.info( list );
+
+    let tail = function(){
+      return new Promise( function( resolve, reject ){
+        let x = list.shift();
+        if( !x ) return resolve();
+        instance._closeTab(x).then( function(){
+          return tail();
+        }).then( function(){
+          resolve();
+        }).catch( function(){
+          reject();
+        });
+      });
+    };
+
+    tail().catch( function(){
+      console.warn( "interrupted" );
+    });
+
+  }
+
+  _saveIfDirty(tab){
+    console.info( "this?", this );
+    let instance = this;
+    return new Promise( function( resolve, reject ){
+      if( tab.opts.dirty ){
+        let rslt = dialog.showMessageBox(null, {
+          buttons: [
+            Messages.CHECK_SAVE_YES, 
+            Messages.CHECK_SAVE_NO, 
+            Messages.CHECK_SAVE_CANCEL
+          ],
+          defaultId: 0, 
+          title: Messages.CHECK_SAVE_DIALOG_TITLE,
+          message: Messages.CHECK_SAVE_DIALOG_MESSAGE,
+          detail: Messages.CHECK_SAVE_DIALOG_DETAIL
+        });
+
+        if( rslt === 2 ) return reject(); // cancel
+        else if( rslt === 0 ){
+          instance._save(tab).then( function(rslt){
+            if( rslt ) resolve();
+            else reject();
+          });
+        }
+        else return resolve();
+      }
+      else resolve();
+    });
   }
 
   /**
@@ -638,74 +749,54 @@ class Editor {
   _closeTab(tab){
 
     tab = this._checkIndexTab(tab);
+    let instance = this;
 
-    if( tab.opts.dirty ){
-       let rslt = dialog.showMessageBox(null, {
-        buttons: [
-          Messages.CHECK_SAVE_YES, 
-          Messages.CHECK_SAVE_NO, 
-          Messages.CHECK_SAVE_CANCEL
-        ],
-        defaultId: 0, 
-        title: Messages.CHECK_SAVE_DIALOG_TITLE,
-        message: Messages.CHECK_SAVE_DIALOG_MESSAGE,
-        detail: Messages.CHECK_SAVE_DIALOG_DETAIL
+    return new Promise( function( resolve, reject ){
+
+      instance._saveIfDirty(tab).then( function(){
+
+        if( tab.opts.file ){
+          Watcher.unwatch( tab.opts.file );
+        }
+        instance._closedTabs.unshift(tab.opts);
+        if( instance._closedTabs.length > MAX_UNCLOSED_TABS ){
+          let x = instance._closedTabs.splice(MAX_UNCLOSED_TABS, 1);
+          x.forEach( function( opts ){
+            if( opts.model ) opts.model.dispose();
+          });
+        }
+
+        if( instance._activeTab === tab ){
+
+          // if this is the active tab, select the _next_ tab, if there's no next 
+          // tab select the _previous_ tab, if this is the only tab add a new empty tab.
+
+          let next = tab.nextSibling;
+          while( next && (!next.className || !next.className.match( /editor-tab/ ))) next = next.nextSibling;
+          if( !next ){
+            next = tab.previousSibling;
+            while( next && (!next.className || !next.className.match( /editor-tab/ ))) next = next.previousSibling;
+          }
+
+          if( next ) instance._selectTab(next);
+          else instance._addTab({ value: "" });
+
+        }
+
+        // remove 
+        tab.parentNode.removeChild(tab);
+
+        // update
+        instance._updateOpenFiles();
+
+        resolve();
+
+      }).catch( function(){
+        console.warn( "close canceled" );
+        reject();
       });
 
-      if( rslt === 2 ) return; // cancel
-      else if( rslt === 0 ){
-        let instance = this;
-        instance._save(tab).then( function(){
-          instance._closeTab(tab);
-        });
-        return;
-      }
-    }
-
-    // for unclosing. FIXME: cap?
-    /*
-    if( tab.opts.file ){
-      this._closedTabs.unshift( tab.opts.file );
-      Watcher.unwatch( tab.opts.file );
-    }
-    */
-
-    if( tab.opts.file ){
-      Watcher.unwatch( tab.opts.file );
-    }
-    this._closedTabs.unshift(tab.opts);
-    if( this._closedTabs.length > MAX_UNCLOSED_TABS ){
-      let x = this._closedTabs.splice(MAX_UNCLOSED_TABS, 1);
-      x.forEach( function( opts ){
-        if( opts.model ) opts.model.dispose();
-      });
-    }
-
-    if( this._activeTab === tab ){
-
-      // if this is the active tab, select the _next_ tab, if there's no next 
-      // tab select the _previous_ tab, if this is the only tab add a new empty tab.
-
-      let next = tab.nextSibling;
-      while( next && (!next.className || !next.className.match( /editor-tab/ ))) next = next.nextSibling;
-      if( !next ){
-        next = tab.previousSibling;
-        while( next && (!next.className || !next.className.match( /editor-tab/ ))) next = next.previousSibling;
-      }
-
-      if( next ) this._selectTab(next);
-      else this._addTab({ value: "" });
-
-    }
-
-    // remove 
-    tab.parentNode.removeChild(tab);
-
-    // clean up resources
-    // if( tab.opts.model ) tab.opts.model.dispose();
-
-    // update
-    this._updateOpenFiles();
+    });
 
   }
 
@@ -782,6 +873,7 @@ class Editor {
 
     let tab = document.createElement("div");
     tab.className = "editor-tab";
+    tab.atomicID = atomicID++;
 
     let label = document.createElement("div");
     label.className = "label";
