@@ -682,7 +682,14 @@ class Editor {
     this._addTab(opts);
   }
 
-  /** */
+  /** 
+   * close other tabs.  this is called from the tab context menu.  one problem
+   * with this is that if you cancel at some point (via a "want to save" 
+   * message) the files that are already closed stay closed.  we could 
+   * theoretically unclose them in that event.
+   * 
+   * @param {*} tab 
+   */
   _closeOtherTabs(tab){
 
     tab = this._checkIndexTab(tab);
@@ -712,11 +719,17 @@ class Editor {
 
   }
 
+  /**
+   * save if dirty.  this was part of the _close method, it was broken out 
+   * to simplify making the function asynchronous.
+   * 
+   * @param {*} tab 
+   */
   _saveIfDirty(tab){
-    console.info( "this?", this );
     let instance = this;
     return new Promise( function( resolve, reject ){
       if( tab.opts.dirty ){
+        let fname = path.basename(tab.opts.file || "Untitled");
         let rslt = dialog.showMessageBox(null, {
           buttons: [
             Messages.CHECK_SAVE_YES, 
@@ -725,7 +738,7 @@ class Editor {
           ],
           defaultId: 0, 
           title: Messages.CHECK_SAVE_DIALOG_TITLE,
-          message: Messages.CHECK_SAVE_DIALOG_MESSAGE,
+          message: Utils.templateString( Messages.CHECK_SAVE_DIALOG_MESSAGE, fname ),
           detail: Messages.CHECK_SAVE_DIALOG_DETAIL
         });
 
@@ -743,7 +756,10 @@ class Editor {
   }
 
   /**
-   * 
+   * close tab.  this function now returns a promise so it can 
+   * be chained in a "close others" or "close to right" function while 
+   * still supporting (optional) saving dirty files.
+   *  
    * @param {*} tab reference or index
    */
   _closeTab(tab){
