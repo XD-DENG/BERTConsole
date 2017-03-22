@@ -188,14 +188,18 @@
   color: inherit;
 }
 
-
 #package-chooser .dialog-header > div {
   display: flex;
 }
+
 #package-chooser .dialog-header-form {
   padding-left: 1em;
   position: relative;
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
 }
+
 #package-chooser .dialog-header-form input[type=text] {
   height: 100%;
   border: 1px solid #ccc;
@@ -207,9 +211,24 @@
   position: absolute;
   font-family: inherit;
 }
+
+.dialog-header-form-child:last-child {
+  font-size: 14px;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+  padding-top: 3px;
+  text-align: right;
+}
+
+.dialog-header-form-child input:checked + label:before {
+  color: #fff !important;
+}
+
 #package-chooser .dialog-body {
   min-height: 10em;
 }
+
 #package-chooser-wait {
   margin: .5em 1em;
 }
