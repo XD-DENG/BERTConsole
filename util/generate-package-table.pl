@@ -86,17 +86,11 @@ my ($reEntities) =
   map quotemeta,
   keys(%HTMLEntities);
 
-sub translateHTMLEntities {
-  my $text = shift;
-  $text =~ s/($reEntities)/$HTMLEntities{$1}/g;
-  return $text;
-}
-
 my @entries;
 while( $contents =~ /<tr>\s*<td>\s*<a href=".*?">(.*?)<\/a>\s*<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/gm ){
   my ($name, $desc) = ($1, $2);
   $desc =~ s/\"/\\"/g;
-  $desc = translateHTMLEntities($desc);
+  $desc =~ s/($reEntities)/$HTMLEntities{$1}/g;
   push @entries, "\"$name\": \"$desc\"";
 }
 
