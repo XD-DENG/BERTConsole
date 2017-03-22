@@ -75,6 +75,7 @@ my $entries = join(",\n    ", @entries);
 my $json = <<END;
 {
   "description": "This file is a map of CRAN package names to short descriptions, generated from a CRAN mirror.",
+  "for-more-information": "https://github.com/sdllc/BERTConsole/tree/master/util",
   "source": "$mirror",
   "date": $date,
   "packages": {
