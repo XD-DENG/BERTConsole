@@ -87,9 +87,10 @@ my ($reEntities) =
   keys(%HTMLEntities);
 
 my @entries;
-while( $contents =~ /<tr>\s*<td>\s*<a href=".*?">(.*?)<\/a>\s*<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/gm ){
+while( $contents =~ /<tr>\s*<td>\s*<a href=".*?">(.*?)<\/a>\s*<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/gs ){
   my ($name, $desc) = ($1, $2);
   $desc =~ s/\"/\\"/g;
+  $desc =~ s/\s+/ /g;
   $desc =~ s/($reEntities)/$HTMLEntities{$1}/g;
   push @entries, "\"$name\": \"$desc\"";
 }
