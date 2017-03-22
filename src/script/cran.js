@@ -131,7 +131,7 @@ const getPackageDescriptions = function(settings){
       let data = localStorage.getItem(hashKey);
       if( data && data === hash ){
 
-        console.info( "hash match" );
+        // console.info( "hash match" );
 
         // the way this works, even if the file is empty, we don't 
         // re-fetch the same hash code.  that's to minimize traffic.
@@ -141,7 +141,7 @@ const getPackageDescriptions = function(settings){
         data = localStorage.getItem(storageKey);
         if( data ){
 
-          console.info( "have data" );
+          // console.info( "have data" );
           
           let obj = {};
           try { 
@@ -153,7 +153,7 @@ const getPackageDescriptions = function(settings){
 
       };
 
-      console.info( "fetching descriptions file" );
+      // console.info( "fetching descriptions file" );
 
       // not in local storage; fetch 
 
