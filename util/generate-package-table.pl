@@ -2,6 +2,7 @@
 
 use strict;
 use POSIX qw(tmpnam);
+use utf8;
 
 # TODO: random mirror
 
@@ -62,17 +63,50 @@ open( F, $local ) or die( "ERROR opening $local\n");
 while( my $line = <F>){ $contents .= $line; }
 close(F);
 
+#
+# I know there's a library for this.  this script attempts to minimize 
+# dependencies.  this is the full set that I've seen in the list so far.
+#
+sub translateHTMLEntities {
+  my $text = shift;
+  my %entities = (
+    "&ndash;" => "\x{2013}",
+    "&mdash;" => "\x{2014}",
+    "&lsquo;" => "\x{2018}",
+    "&rsquo;" => "\x{2019}",
+    "&ldquo;" => "\x{201c}",
+    "&rdquo;" => "\x{201d}",
+    "&gt;" => ">",
+    "&lt;" => "<",
+    "&amp;" => "&" # last
+  );
+
+  my ($re) =
+    map qr/$_/,
+    join '|',
+    map quotemeta,
+    keys(%entities);
+
+  $text =~ s/($re)/$entities{$1}/g;
+
+  return $text;
+}
+
 my @entries;
 while( $contents =~ /<tr>\s*<td>\s*<a href=".*?">(.*?)<\/a>\s*<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/gm ){
   my ($name, $desc) = ($1, $2);
   $desc =~ s/\"/\\"/g;
+  $desc = translateHTMLEntities($desc);
   push @entries, "\"$name\": \"$desc\"";
 }
 
 my $date = time();
 my $entries = join(",\n    ", @entries);
 
-my $json = <<END;
+my $json;
+utf8::upgrade($json);
+
+$json = <<END;
 {
   "description": "This file is a map of CRAN package names to short descriptions, generated from a CRAN mirror.",
   "for-more-information": "https://github.com/sdllc/BERTConsole/tree/master/util",
@@ -83,6 +117,8 @@ my $json = <<END;
   }
 }
 END
+
+utf8::encode($json);
 
 if( $console ){
   print $json;
