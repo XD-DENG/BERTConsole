@@ -24,6 +24,7 @@
 
 const fs = require( "fs" );
 const path = require( "path" );
+const https = require( "https" );
 
 const PubSub = require( "pubsub-js" );
 
@@ -51,6 +52,123 @@ const getTemplate = function(f){
   })
 }
 
+////
+
+/**
+ * get the latest commit hash for the shell repo. we're using that to 
+ * get the latest package description file.
+ * 
+ * FIXME: check commit for file?
+ * 
+ * @param {*} force 
+ */
+const getLatestCommit = function(settings, force){
+  return new Promise( function( resolve, reject ){
+
+    var options = {
+      host: 'api.github.com',
+      path: '/repos/sdllc/BERTConsole/git/refs/heads/master',
+      headers: { 
+        'user-agent': 'https://github.com/sdllc/BERTConsole'
+      }
+    };
+
+    if( !force && settings.cran && settings.cran['commit-etag'] ) options.headers['If-None-Match'] = settings.cran['commit-etag'];
+
+    let callback = function(response) {
+      let str = '';
+      response.on('data', function (chunk) { str += chunk; });
+      response.on('end', function () {
+        let data;
+        try {
+          data = str.length ? JSON.parse(str) : {};
+          if( response.statusCode === 200 ){
+            if( !settings.cran ) settings.cran = {};
+            settings.cran['commit-etag'] = response.headers.etag;
+            settings.cran['commit-hash'] = data.object ? data.object.sha : null;
+          }
+          resolve(true);
+
+        }
+        catch(e){ 
+          console.error(e);
+          resolve(false); // NOT reject
+        }
+      });
+    };
+
+    https.request(options, callback).end();
+  });
+};
+
+/**
+ * fetch the package description list via CDN using the commit hash
+ */
+const getPackageDescriptions = function(settings){
+
+  return new Promise( function( resolve, reject ){
+
+    // once per session, check commit hash.  use etag.
+
+    let p;
+    if( !global['check-commit-hash'] ){
+      global['check-commit-hash'] = true;
+      p = getLatestCommit(settings);
+    }
+    else p = Promise.resolve();
+
+    p.then( function(){
+
+      // after checking commit, see if we have this description 
+      // file in local storage.  if so, return it.
+      
+      if( !settings.cran || !settings.cran['commit-hash'] ) return reject();
+      let storageKey = `package-descriptions-${settings.cran['commit-hash']}`;
+      let data = localStorage.getItem(storageKey);
+      if( data ){
+        let obj = {};
+        try { 
+          obj = JSON.parse( data ); 
+          return resolve( obj );
+        }
+        catch( e ){ console.error(e); }
+      }
+
+      // not in local storage; fetch 
+ 
+      var options = {
+        host: 'cdn.rawgit.com',
+        path: `/sdllc/BERTConsole/${settings.cran['commit-hash']}/util/packages.json`,
+        headers: { 
+          'user-agent': 'https://github.com/sdllc/BERTConsole'
+        }
+      };
+
+      let callback = function(response) {
+        let str = '';
+        response.on('data', function (chunk) { str += chunk; });
+        response.on('end', function () {
+          let obj;
+          try { obj = str.length ? JSON.parse(str) : {}; }
+          catch(e){ 
+            console.error(e);
+          }
+          localStorage.setItem(storageKey, JSON.stringify(obj));
+          resolve(obj);
+        });
+      };
+      https.request(options, callback).end();
+
+      //
+
+    });
+
+  });
+
+}
+
+////
+
 
 /**
  * if we have a good CRAN repo, start the package chooser.
@@ -70,6 +188,7 @@ const showPackageChooserInternal = function(R, settings, cran){
     let data = Cache.get( cacheKey );
     let filtered;
     let selected_count = 0;
+    let descriptions = {};
 
     // start with "please wait"
     chooser.nodes['package-chooser-wait'].style.display = "block";
@@ -138,7 +257,6 @@ const showPackageChooserInternal = function(R, settings, cran){
       node.index = index;
 
       let name = node.querySelector( '.package-chooser-name' );
-
       if( data.installed ){
         name.parentNode.classList.add( "disabled" );
       }
@@ -153,6 +271,9 @@ const showPackageChooserInternal = function(R, settings, cran){
 
       name.innerText = data[0];
 
+      let description = node.querySelector( '.package-chooser-description' );
+      description.innerText = data.description || "";
+
       //let version = node.querySelector( '.package-chooser-version' );
       //version.innerText = data[1];
 
@@ -164,6 +285,7 @@ const showPackageChooserInternal = function(R, settings, cran){
         <div class='chooser-checkbox'>
           <label class='package-chooser-name'></label>
         </div>
+        <div class='package-chooser-description'></div>
       </div>
     `;
 
@@ -200,7 +322,16 @@ const showPackageChooserInternal = function(R, settings, cran){
 
       // next get list of available packages (unless we have cache)
       let p = data ? Promise.resolve(data) : R.internal([ "exec", "available.packages()[,1:2]" ], "package-chooser");
-      p.then( function( obj ){
+      let obj;
+
+      p.then( function( rslt ){
+
+        obj = rslt;
+        return getPackageDescriptions(settings);
+
+      }).then( function( rslt ){
+
+        if( rslt && rslt.packages ) descriptions = rslt.packages;
 
         if( obj.type === "response" ){
 
@@ -237,6 +368,7 @@ const showPackageChooserInternal = function(R, settings, cran){
         for( let i = 0; i< names.length; i++ ){
           names[i] = [ data[i][0], i ];
           data[i].index = i;
+          data[i].description = descriptions[data[i][0]];
         };
 
         names.sort(function(a, b){ return scmp(a[0], b[0]); });

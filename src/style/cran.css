@@ -167,6 +167,15 @@
   color: #666;
 }
 
+.package-chooser-description {
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #999;
+  padding-left: 1em;
+  cursor: default;
+}
+
 .vlist-list-entry:nth-child(even) .package-chooser-entry {
   background: #F6FCFE;
 }

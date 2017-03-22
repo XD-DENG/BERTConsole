@@ -30,7 +30,7 @@ let request = function(force){
       host: 'api.github.com',
       path: '/repos/sdllc/Basic-Excel-R-Toolkit/releases/latest',
       headers: { 
-        'user-agent': 'https://github.com/sdllc/BERT-Console'
+        'user-agent': 'https://github.com/sdllc/BERTConsole'
       }
     };
 
