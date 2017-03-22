@@ -120,22 +120,44 @@ const getPackageDescriptions = function(settings){
     p.then( function(){
 
       // after checking commit, see if we have this description 
-      // file in local storage.  if so, return it.
+      // file in local storage.  if so, return it.  we cache the 
+      // descriptions and hash separately, to promote overwriting.
       
-      if( !settings.cran || !settings.cran['commit-hash'] ) return reject();
-      let storageKey = `package-descriptions-${settings.cran['commit-hash']}`;
-      let data = localStorage.getItem(storageKey);
-      if( data ){
-        let obj = {};
-        try { 
-          obj = JSON.parse( data ); 
+      if( !settings.cran || !settings.cran['commit-hash'] ) return resolve(false);
+      let hash = settings.cran['commit-hash'];
+      let hashKey = "commit-hash";
+      let storageKey = "package-descriptions";
+
+      let data = localStorage.getItem(hashKey);
+      if( data && data === hash ){
+
+        console.info( "hash match" );
+
+        // the way this works, even if the file is empty, we don't 
+        // re-fetch the same hash code.  that's to minimize traffic.
+        // you can manually flush the file (or wait for next commit).
+        // if there's no file, then we do try again.
+
+        data = localStorage.getItem(storageKey);
+        if( data ){
+
+          console.info( "have data" );
+          
+          let obj = {};
+          try { 
+            obj = JSON.parse( data ); 
+          }
+          catch( e ){ console.error(e); }
           return resolve( obj );
         }
-        catch( e ){ console.error(e); }
-      }
+
+      };
+
+      console.info( "fetching descriptions file" );
 
       // not in local storage; fetch 
- 
+
+      localStorage.setItem(hashKey, hash);
       var options = {
         host: 'cdn.rawgit.com',
         path: `/sdllc/BERTConsole/${settings.cran['commit-hash']}/util/packages.json`,
