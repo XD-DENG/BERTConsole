@@ -2,7 +2,7 @@
   "description": "This file is a map of CRAN package names to short descriptions, generated from a CRAN mirror.",
   "for-more-information": "https://github.com/sdllc/BERTConsole/tree/master/util",
   "source": "https://cran.revolutionanalytics.com",
-  "date": 1490215535,
+  "date": 1490216014,
   "packages": {
     "abbyyR": "Access to Abbyy Optical Character Recognition (OCR) API",
     "abc": "Tools for Approximate Bayesian Computation (ABC)",

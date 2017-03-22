@@ -67,28 +67,28 @@ close(F);
 # I know there's a library for this.  this script attempts to minimize 
 # dependencies.  this is the full set that I've seen in the list so far.
 #
+
+my %HTMLEntities = (
+  "&ndash;" => "\x{2013}",
+  "&mdash;" => "\x{2014}",
+  "&lsquo;" => "\x{2018}",
+  "&rsquo;" => "\x{2019}",
+  "&ldquo;" => "\x{201c}",
+  "&rdquo;" => "\x{201d}",
+  "&gt;" => ">",
+  "&lt;" => "<",
+  "&amp;" => "&" # last
+);
+
+my ($reEntities) =
+  map qr/$_/,
+  join '|',
+  map quotemeta,
+  keys(%HTMLEntities);
+
 sub translateHTMLEntities {
   my $text = shift;
-  my %entities = (
-    "&ndash;" => "\x{2013}",
-    "&mdash;" => "\x{2014}",
-    "&lsquo;" => "\x{2018}",
-    "&rsquo;" => "\x{2019}",
-    "&ldquo;" => "\x{201c}",
-    "&rdquo;" => "\x{201d}",
-    "&gt;" => ">",
-    "&lt;" => "<",
-    "&amp;" => "&" # last
-  );
-
-  my ($re) =
-    map qr/$_/,
-    join '|',
-    map quotemeta,
-    keys(%entities);
-
-  $text =~ s/($re)/$entities{$1}/g;
-
+  $text =~ s/($reEntities)/$HTMLEntities{$1}/g;
   return $text;
 }
 
