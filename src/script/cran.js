@@ -55,11 +55,9 @@ const getTemplate = function(f){
 ////
 
 /**
- * get the latest commit hash for the shell repo. we're using that to 
- * get the latest package description file.
- * 
- * FIXME: check commit for file?
- * 
+ * get the latest commit hash for the particular file (used to get for master).
+ * however: is there a way to limit to just the most recent commit?
+ *  
  * @param {*} force 
  */
 const getLatestCommit = function(settings, force){
@@ -67,7 +65,7 @@ const getLatestCommit = function(settings, force){
 
     var options = {
       host: 'api.github.com',
-      path: '/repos/sdllc/BERTConsole/git/refs/heads/master',
+      path: '/repos/sdllc/BERTConsole/commits?path=util/packages.json',
       headers: { 
         'user-agent': 'https://github.com/sdllc/BERTConsole'
       }
@@ -83,12 +81,16 @@ const getLatestCommit = function(settings, force){
         try {
           data = str.length ? JSON.parse(str) : {};
           if( response.statusCode === 200 ){
+            console.info( 200 );
             if( !settings.cran ) settings.cran = {};
             settings.cran['commit-etag'] = response.headers.etag;
-            settings.cran['commit-hash'] = data.object ? data.object.sha : null;
-          }
+            if( data.length && data[0].sha ){
+              settings.cran['commit-hash'] = data[0].sha;
+              console.info( "Have hash: " + data[0].sha );
+            }
+          } 
+          else console.info( "SC", response.statusCode );
           resolve(true);
-
         }
         catch(e){ 
           console.error(e);
@@ -131,7 +133,7 @@ const getPackageDescriptions = function(settings){
       let data = localStorage.getItem(hashKey);
       if( data && data === hash ){
 
-        // console.info( "hash match" );
+        console.info( "hash match" );
 
         // the way this works, even if the file is empty, we don't 
         // re-fetch the same hash code.  that's to minimize traffic.
@@ -141,7 +143,7 @@ const getPackageDescriptions = function(settings){
         data = localStorage.getItem(storageKey);
         if( data ){
 
-          // console.info( "have data" );
+          console.info( "have data" );
           
           let obj = {};
           try { 
@@ -153,7 +155,7 @@ const getPackageDescriptions = function(settings){
 
       };
 
-      // console.info( "fetching descriptions file" );
+      console.info( "fetching descriptions file" );
 
       // not in local storage; fetch 
 
