@@ -212,6 +212,8 @@ const showPackageChooserInternal = function(R, settings, cran){
     let selected_count = 0;
     let descriptions = {};
 
+    let filterOnDescriptions = false;
+
     // start with "please wait"
     chooser.nodes['package-chooser-wait'].style.display = "block";
     chooser.nodes['package-chooser-list'].style.display = "none";
@@ -225,9 +227,18 @@ const showPackageChooserInternal = function(R, settings, cran){
       else {
         let rex = new RegExp(currentFilter, "i");
         filtered = [];
-        for( let i = 0; i< data.length; i++ ){
-          if( data[i][0].match( rex )){
-            filtered.push( data[i] );
+        if( filterOnDescriptions ){
+          for( let i = 0; i< data.length; i++ ){
+            if( data[i].compositeText.match( rex )){
+              filtered.push( data[i] );
+            }
+          }
+        }
+        else {
+          for( let i = 0; i< data.length; i++ ){
+            if( data[i][0].match( rex )){
+              filtered.push( data[i] );
+            }
           }
         }
       }
@@ -390,7 +401,8 @@ const showPackageChooserInternal = function(R, settings, cran){
         for( let i = 0; i< names.length; i++ ){
           names[i] = [ data[i][0], i ];
           data[i].index = i;
-          data[i].description = descriptions[data[i][0]];
+          data[i].description = descriptions[data[i][0]] || "";
+          data[i].compositeText = `${data[i][0]} (${Messages.INSTALLED}) ${data[i].description}`;
         };
 
         names.sort(function(a, b){ return scmp(a[0], b[0]); });
