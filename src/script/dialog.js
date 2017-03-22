@@ -109,7 +109,6 @@ const Dialog = function(html, Messages){
       window.addEventListener( "keydown", keyHandler );
 
       clickHandler = function(e){
-        
         let dialogResult = null;
         if( e.target.tagName === "BUTTON" ){
           if( e.target.classList.contains( "dialog-button-ok" )) dialogResult = "OK";

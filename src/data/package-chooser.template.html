@@ -10,7 +10,13 @@
         Available Packages
       </div>
       <div class='dialog-header-form'>
-        <input type='text' id='package-chooser-filter' placeholder='Filter...' data-placeholder-message='FILTER'>
+        <div class='filter-container dialog-header-form-child'>
+          <input type='text' id='package-chooser-filter' placeholder='Filter...' data-placeholder-message='FILTER'>
+        </div>
+        <div class='dialog-checkbox dialog-header-form-child'>
+          <input type='checkbox' id='checkbox-filter-package-name-only'/>
+          <label for='checkbox-filter-package-name-only' data-textcontent-message='FILTER_NAME_ONLY'>Filter on Package Name Only</label>
+        </div>
       </div>
     </div>
   </div>

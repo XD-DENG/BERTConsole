@@ -214,6 +214,8 @@ const showPackageChooserInternal = function(R, settings, cran){
 
     let filterOnDescriptions = false;
 
+    chooser.nodes['checkbox-filter-package-name-only'].checked = true;
+
     // start with "please wait"
     chooser.nodes['package-chooser-wait'].style.display = "block";
     chooser.nodes['package-chooser-list'].style.display = "none";
@@ -245,9 +247,9 @@ const showPackageChooserInternal = function(R, settings, cran){
     };
 
     // update the filter, update or potentially create the list 
-    let updateFilter = function(){
+    let updateFilter = function(force){
       let f = (chooser.nodes['package-chooser-filter'].value || "").trim();
-      if( !vlist || ( currentFilter !== f )){
+      if( !vlist || ( currentFilter !== f ) || force ){
         currentFilter = f;
         filterData();
         if(!vlist) vlist = new VList( chooser.nodes['package-chooser-list'], filtered, nodetemplate, update );
@@ -258,8 +260,20 @@ const showPackageChooserInternal = function(R, settings, cran){
 
     // element click 
     let click = function(e){
+
       let n = e.target;
       while( n && n.parentNode && n.className !== "vlist-list-entry" ){
+
+        if( n.classList.contains("dialog-header-form-child")){
+          n = n.querySelector( "input[type=checkbox]" );
+          if( n ){
+            n.checked = !n.checked;
+            filterOnDescriptions = !n.checked;
+            updateFilter(true);
+          }
+          return null;
+        }
+
         n = n.parentNode;
       }
       if( n.className !== "vlist-list-entry" ) return null;

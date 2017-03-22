@@ -196,7 +196,7 @@
   padding-left: 1em;
   position: relative;
 }
-#package-chooser .dialog-header-form input {
+#package-chooser .dialog-header-form input[type=text] {
   height: 100%;
   border: 1px solid #ccc;
   border-radius: 2px;

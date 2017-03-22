@@ -75,6 +75,7 @@ module.exports = {
     FILTER: "Filter...",
     LOADING_PACKAGE_LIST: "Loading package list, please wait...",
     AVAILABLE_PACKAGES: "Available Packages",
+    FILTER_NAME_ONLY: "Filter on Package Name Only",
 
     // mirrors
 

@@ -63,3 +63,30 @@
  * instead, open the BERT console options file and set the 
  * option editor.fontFamily (and optionally editor.fontSize).
  */
+
+#package-chooser .dialog-header-form {
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
+}
+
+.dialog-header-form-child {
+}
+
+.dialog-header-form-child:first-child {
+  width: 10em;
+  height: 1em;
+}
+
+.dialog-header-form-child:last-child {
+  font-size: 14px;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+  padding-top: 3px;
+  text-align: right;
+}
+
+.dialog-header-form-child input:checked + label:before {
+  color: #fff !important;
+}
