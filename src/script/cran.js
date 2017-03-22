@@ -81,15 +81,16 @@ const getLatestCommit = function(settings, force){
         try {
           data = str.length ? JSON.parse(str) : {};
           if( response.statusCode === 200 ){
-            console.info( 200 );
+            // console.info( 200 );
             if( !settings.cran ) settings.cran = {};
             settings.cran['commit-etag'] = response.headers.etag;
             if( data.length && data[0].sha ){
               settings.cran['commit-hash'] = data[0].sha;
-              console.info( "Have hash: " + data[0].sha );
+              // console.info( "Have hash: " + data[0].sha );
             }
           } 
-          else console.info( "SC", response.statusCode );
+          //else console.info( "SC", response.statusCode );
+          
           resolve(true);
         }
         catch(e){ 
@@ -133,7 +134,7 @@ const getPackageDescriptions = function(settings){
       let data = localStorage.getItem(hashKey);
       if( data && data === hash ){
 
-        console.info( "hash match" );
+        // console.info( "hash match" );
 
         // the way this works, even if the file is empty, we don't 
         // re-fetch the same hash code.  that's to minimize traffic.
@@ -143,7 +144,7 @@ const getPackageDescriptions = function(settings){
         data = localStorage.getItem(storageKey);
         if( data ){
 
-          console.info( "have data" );
+          // console.info( "have data" );
           
           let obj = {};
           try { 
@@ -155,7 +156,7 @@ const getPackageDescriptions = function(settings){
 
       };
 
-      console.info( "fetching descriptions file" );
+      // console.info( "fetching descriptions file" );
 
       // not in local storage; fetch 
 
@@ -339,7 +340,7 @@ const showPackageChooserInternal = function(R, settings, cran){
     `;
 
     chooser.show(click, {fixSize: true}).then( function( result ){
-       console.info( "Close dialog", result );
+      // console.info( "Close dialog", result );
       chooser.nodes['package-chooser-filter'].removeEventListener( "input", updateFilter );
       vlist.cleanup();
 
