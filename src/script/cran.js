@@ -476,7 +476,7 @@ module.exports.showPackageChooser = function(R, settings){
       }
       if(cran && cran.match( /^http/i )) return Promise.resolve( cran );
     } 
-    return module.exports.showMirrorChooser();
+    return module.exports.showMirrorChooser(R, settings);
   }).then( function(cran){
     if( cran && cran.match( /^http/ )){
       showPackageChooserInternal(R, settings, cran);

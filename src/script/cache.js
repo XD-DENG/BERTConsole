@@ -47,13 +47,13 @@ let Cache = function( sessionid ){
     if( val.expire ){
       let now = Math.round( new Date().getTime() / 1000 );
       if( now > val.expire ){
-        console.info( "expired", now, val.expire );
+        console.info( "[cache] expired", now, val.expire );
         return null;
       }
     }
     else {
       if( val.session !== sessionid ){
-        console.info( "from old session", val.session, sessionid );
+        console.info( "[cache] from old session", val.session, sessionid );
         return null;
       }
     }
@@ -68,7 +68,7 @@ let Cache = function( sessionid ){
   this.set = function( key, data, expire ){
     expire = expire || 0;
     if( expire ) expire = Math.round( new Date().getTime() / 1000 ) + expire;
-    console.info( "set; expire =", expire );
+    console.info( "[cache] set; expire =", expire );
 
     let wrapper = {
       data: data,

@@ -923,7 +923,7 @@ PubSub.subscribe( "settings-change", function( channel, data ){
     return;
   }
 
-  console.info( data );
+  // console.info( data ); // dev 
 
 });
 
