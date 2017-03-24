@@ -533,7 +533,24 @@ const init_r = function(){
   let pipename = process.env.BERT_PIPE_NAME;
 
   if( pipename ){ 
-    R.init({ pipename: pipename });
+
+    R.init({ pipename: pipename }).then( function(){
+
+      // if there's no cran set in options, but we have one in settings,
+      // then set it.  otherwise if you call install.packages from the 
+      // console you get the old mirror chooser (TODO: intercept and use 
+      // our mirror chooser)
+
+      if( settings.cran && settings.cran.mirror ){
+        let cmd = `suppressMessages({if( getOption("repos")[["CRAN"]] == "@CRAN@" ){ op <- getOption("repos" ); op[["CRAN"]] <- "${settings.cran.mirror}"; options( repos=op );}})`;
+        R.exec([cmd]).catch( function(err){
+          console.error(err);
+        })
+      }
+
+    }).catch(function(err){
+      console.error(err);
+    });
 
     window.addEventListener("beforeunload", function (event) {
       if( global.__quit || global.allowReload ) return;

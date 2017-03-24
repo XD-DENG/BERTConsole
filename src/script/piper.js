@@ -435,42 +435,36 @@ const PipeR = function () {
   let client;
   this.initialized = false;
 
+  /**
+   * initialize connection; resolve when connected for 
+   * any necessary post-connect calls
+   */
   this.init = function(opts){
 
     opts = opts || {};
     let s = "";
-
-    if( !opts.pipename ) throw( "Missing pipe name");
-    client = net.createConnection({path: "\\\\.\\pipe\\" + opts.pipename}, () => {
-      //'connect' listener
-      console.log('connected to service');
-    });
-    client.setEncoding('utf8');
-    client.on("readable", on_read.bind(this, client, buffer, read_callback));
-
-    /*
-    client.on('data', (data) => {
-
-      s += data.toString();
-      let messages = s.split( "\n" );
-      s = "";
-      messages.forEach( function(m){
-        if( m.endsWith( "}" )){
-          let msg = JSON.parse( m );
-          if( msg.message === "console" ) this.emit( "console", msg.data );
-        }
-        else s += m;
-      }, this);
-
-    });
-    */
-
-    client.on('end', () => {
-      console.log('disconnected from pipe (xmit)');
-      this.emit( "pipe-closed" );
-    });
+    let instance = this;
 
     this.initialized = true;
+
+    return new Promise( function( resolve, reject ){
+
+      if( !opts.pipename ) return reject( "Missing pipe name");
+
+      client = net.createConnection({path: "\\\\.\\pipe\\" + opts.pipename}, () => {
+        console.log('connected to service');
+        resolve();
+      });
+
+      client.setEncoding('utf8');
+      client.on("readable", on_read.bind(instance, client, buffer, read_callback));
+      client.on('end', () => {
+        console.log('disconnected from pipe (xmit)');
+        instance.emit( "pipe-closed" );
+      });
+
+    });
+
   }
 
   /**
