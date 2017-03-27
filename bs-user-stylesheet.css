@@ -26,7 +26,15 @@
 }
 */
 
-/** some exposed classes in the monaco editor: */
+/** remove the frame around the current line in the editor: */
+
+/*
+.monaco-editor .current-line {
+  border-color: transparent !important;
+}
+*/
+
+/** some more exposed classes in the monaco editor: */
 
 /*
 .monaco-editor, .monaco-editor-background {
@@ -37,13 +45,14 @@
 	background: darkred !important;
 }
 
-.monaco-editor .current-line {
-	background: rgba(0, 0, 255, 0.1);
-}
-
 .monaco-editor .lines-decorations {
 	background-color: #EDF9FA;
 }
+
+.monaco-editor .current-line {
+  background: rgba( 0, 0, 255, .1 );
+}
+
 */
 
 /** text selections (lighter when not focused): */
