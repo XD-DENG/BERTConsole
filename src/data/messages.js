@@ -110,7 +110,7 @@ module.exports = {
     CHECK_SAVE_YES: "Yes",
     CHECK_SAVE_NO: "No", 
     CHECK_SAVE_CANCEL: "Cancel",
-    CHECK_SAVE_DIALOG_TITLE: "Close File", 
+    CHECK_SAVE_DIALOG_TITLE: "Save Changes?", 
     CHECK_SAVE_DIALOG_MESSAGE: "$1 has unsaved changes.\nClick Yes to save, No to close without saving.",
     CHECK_SAVE_DIALOG_DETAIL: "If you accidentally close a file without saving, use Ctrl+T to recover it.",
 
