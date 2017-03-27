@@ -13,7 +13,7 @@ fairly static, so we will update it periodically but infrequently.  When the
 data is updated the file will be checked in, so reading the latest commit 
 should give the most recent data.  Currently:
 
-https://cdn.rawgit.com/sdllc/BERTConsole/8dd7ea178e2396695c1ed3549fb669ff985405a8/util/packages.json
+https://cdn.rawgit.com/sdllc/BERTConsole/1b23fa17da2ec8abb2c737f20cdbb2c4425e2a16/util/packages.json
 
 Thanks to [RawGit][1] and [StackPath][2].
 
