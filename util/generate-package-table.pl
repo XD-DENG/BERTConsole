@@ -9,6 +9,7 @@ use utf8;
 my $mirror = "https://cran.revolutionanalytics.com";
 my $file = "/web/packages/available_packages_by_name.html";
 my $local = "packages.html";
+my $method = "curl";
 my $output = "packages.json";
 
 my $fetch = 0;
@@ -18,6 +19,7 @@ foreach my $arg (@ARGV){
   if( $arg =~ /--mirror=(.*)$/ ){ $mirror = $1; }
   elsif( $arg =~ /--output=(.*)$/ ){ $output = $1; }
   elsif( $arg =~ /--local=(.*)$/ ){ $local = $1; }
+  elsif( $arg =~ /--method=(.*)$/ ){ $method = $1; }
   elsif( $arg =~ /--fetch/ ){ $fetch = 1; }
   elsif( $arg =~ /--console/ ){ $console = 1; }
   elsif( $arg =~ /(?:--help|-\?)/){
@@ -35,6 +37,7 @@ options:
   --mirror=cran-mirror-url     a cran mirror expected to host the package table
   --output=output-json-file    path to generated json file (packages.json)
   --local=temp-html-file       path to temporary download file (packages.html)
+  --method=(curl|wget)         select download method; defaults to curl
   --fetch                      if omitted, script will read existing html file
   --console                    write JSON to console instead of output file
   --help, -?                   print this message and exit
@@ -52,7 +55,9 @@ if( $fetch ){
   my $url = $mirror . $file;
   print "fetching file...\n";
   `rm $local` if -e $local;
-  `wget -O $local $url`;
+  if( $method eq "wget" ){ `wget -O $local $url`; }
+  elsif( $method eq "curl" ){ `curl -o $local $url`; }
+  else{ die( "invalid download method '$method'"); }
 }
 else {
   print "using existing file\n";
@@ -96,6 +101,7 @@ while( $contents =~ /<tr>\s*<td>\s*<a href=".*?">(.*?)<\/a>\s*<\/td>\s*<td>(.*?)
 }
 
 my $date = time();
+my $count = scalar @entries;
 my $entries = join(",\n    ", @entries);
 
 my $json;
@@ -107,6 +113,7 @@ $json = <<END;
   "for-more-information": "https://github.com/sdllc/BERTConsole/tree/master/util",
   "source": "$mirror",
   "date": $date,
+  "package-count": $count,
   "packages": {
     $entries
   }

@@ -1,8 +1,9 @@
 {
   "description": "This file is a map of CRAN package names to short descriptions, generated from a CRAN mirror.",
   "for-more-information": "https://github.com/sdllc/BERTConsole/tree/master/util",
-  "source": "https://cran.revolutionanalytics.com",
-  "date": 1491408434,
+  "source": "https://mirrors.nics.utk.edu/cran",
+  "date": 1491409108,
+  "package-count": 10393,
   "packages": {
     "A3": "Accurate, Adaptable, and Accessible Error Metrics for Predictive Models",
     "abbyyR": "Access to Abbyy Optical Character Recognition (OCR) API",
@@ -1876,6 +1877,7 @@
     "DEMEtics": "Evaluating the genetic differentiation between populations based on Gst and D values",
     "demi": "Differential Expression from Multiple Indicators",
     "deming": "Deming, Thiel-Sen and Passing-Bablock Regression",
+    "demogR": "Analysis of Age-Structured Demographic Models",
     "demography": "Forecasting Mortality, Fertility, Migration and Population Data",
     "demoKde": "Kernel Density Estimation for Demonstration Purposes",
     "DEMOVA": "DEvelopment (of Multi-Linear QSPR/QSAR) MOdels VAlidated using Test Set",
