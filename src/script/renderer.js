@@ -348,7 +348,7 @@ const updateMenu = function(){
  * is set to "js" (that shoudl be the default IF the console is open).
  */
 const download_file = function(opts){
-	
+
 	return new Promise( function( resolve, reject ){
 		
 		let progressbar = null;
@@ -378,7 +378,10 @@ const download_file = function(opts){
         ProgressBarManager.update(progressbar);
       }
 			if( args.state !== "completed" ){
-				shell.response( `\n${Messages.DOWNLOAD_FAILED}: ${args.state}\n` );
+        if( !opts.quiet )
+				  shell.response( `\n${Messages.DOWNLOAD_FAILED}: ${args.state}\n` );
+        else 
+          console.info( `${Messages.DOWNLOAD_FAILED} (quiet): ${args.state}`);
 			}
 			ipcRenderer.removeAllListeners( "download-complete" );
 			ipcRenderer.removeAllListeners( "download-progress" );
