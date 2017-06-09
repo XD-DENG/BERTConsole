@@ -349,6 +349,8 @@ const updateMenu = function(){
  */
 const download_file = function(opts){
 
+  console.info( "DF", opts );
+
 	return new Promise( function( resolve, reject ){
 		
 		let progressbar = null;
@@ -380,8 +382,10 @@ const download_file = function(opts){
 			if( args.state !== "completed" ){
         if( !opts.quiet )
 				  shell.response( `\n${Messages.DOWNLOAD_FAILED}: ${args.state}\n` );
-        else 
+        else {
           console.info( `${Messages.DOWNLOAD_FAILED} (quiet): ${args.state}`);
+          console.info( opts );
+        }
 			}
 			ipcRenderer.removeAllListeners( "download-complete" );
 			ipcRenderer.removeAllListeners( "download-progress" );

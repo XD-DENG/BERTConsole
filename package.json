@@ -5,7 +5,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "shell": "./node_modules/.bin/electron index.js --devtools",
+    "shell": "./node_modules/.bin/electron index.js --devtools --pipename bert-super-pipe",
     "build": "sh ./build.sh"
   },
   "dependencies": {
