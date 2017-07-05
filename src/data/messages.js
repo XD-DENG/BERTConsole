@@ -32,7 +32,7 @@ module.exports = {
     SHELL: "Shell",
     CHANGE_FOCUS: "$1 has focus",
     CHANGE_FOCUS_LONG: "$1 has focus (use $2 to switch)",
-    WINDOW_SWITCH_SHORTCUT: "Ctrl+E",
+    // WINDOW_SWITCH_SHORTCUT: "Ctrl+E",
     SPLITTER_DRAG: "Layout: $1% / $2%",
     
     INVALID_SETTINGS_FILE: "Invalid settings file",
@@ -69,8 +69,10 @@ module.exports = {
     // packages 
 
     INSTALLED: "installed",
-    PACKAGE_SELECTED_SINGLE: "Package selected",
-    PACKAGE_SELECTED_PLURAL: "Packages selected",
+    PACKAGE_SELECTED: [
+      "$1 Package selected",
+      "$1 Packages selected"
+    ],
 
     FILTER: "Filter...",
     LOADING_PACKAGE_LIST: "Loading package list, please wait...",
@@ -114,26 +116,13 @@ module.exports = {
     CHECK_SAVE_CANCEL: "Cancel",
     CHECK_SAVE_DIALOG_TITLE: "Save Changes?", 
     CHECK_SAVE_DIALOG_MESSAGE: "$1 has unsaved changes.\nClick Yes to save, No to close without saving.",
-    CHECK_SAVE_DIALOG_DETAIL: "If you accidentally close a file without saving, use Ctrl+T to recover it.",
-
+    CHECK_SAVE_DIALOG_DETAIL: "If you accidentally close a file without saving, use $1 to recover it.",
+    // UNCLOSE_TAB_SHORTCUT: 'Ctrl+Shift+T',
+    
     // file dialog
 
     R_FILES_PATTERN: 'R Files',
     ALL_FILES_PATTERN: 'All Files',
-
-    // for the editor html template (mostly search)
-    /*
-    FIND: "Find",
-    CASE_SENSITIVE: "Case Sensitive",
-    WHOLE_WORD: "Whole Word",
-    REGEX: "Regex",
-    FIND_PREVIOUS: "Find Previous",
-    FIND_NEXT: "Find Next",
-    CLOSE_SEARCH_PANEL: 'Close Search Panel',
-    REPLACE: "Replace",
-    REPLACE_ONE: "Replace One",
-    REPLACE_ALL: "Replace All",
-    */
 
     // errors
 
@@ -142,11 +131,9 @@ module.exports = {
 
     // warning
 
-    FILE_CHANGED_WARNING: {
-      TITLE: "Save Warning",
-      MESSAGE:"This file has changed on disk.",
-      DETAIL: "To avoid losing data, you should save this file with a different name."
-    }
+    FILE_CHANGED_WARNING_TITLE: "Save Warning",
+    FILE_CHANGED_WARNING_MESSAGE:"This file has changed on disk.",
+    FILE_CHANGED_WARNING_DETAIL: "To avoid losing data, you should save this file with a different name.",
 
   }
 

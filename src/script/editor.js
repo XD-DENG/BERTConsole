@@ -389,13 +389,21 @@ class Editor {
 
         instance._editor = monaco.editor.create(instance._nodes['editor-body'], options );
 
-        // window.editor = instance.editor;
+        let kbs = Menus.KeyboardShortcuts || [];
+        let kb = [ monaco.KeyCode.F9 ]; // default
+
+        kbs.some( function( shortcut ){
+          if( shortcut.id === 'kb-editor-execute-selected-code' ){
+            kb = Utils.mapMonacoKeycode.call( monaco, shortcut.accelerator );
+            return true;
+          }
+        })
 
         instance._editor.addAction({
 
           id: 'exec-selected-code',
           label: Messages.CONTEXT_EXECUTE_SELECTED_CODE,
-          keybindings: [ monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+          keybindings: kb, // [ monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
           keybindingContext: null, // ??
           contextMenuGroupId: '80_exec',
           contextMenuOrder: 1,
@@ -424,11 +432,20 @@ class Editor {
 
         });
 
+        kb = [ monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F9 ]; // default
+
+        kbs.some( function( shortcut ){
+          if( shortcut.id === 'kb-editor-execute-buffer' ){
+            kb = Utils.mapMonacoKeycode.call( monaco, shortcut.accelerator );
+            return true;
+          }
+        })
+
         instance._editor.addAction({
 
           id: 'exec-entire-buffer',
           label: Messages.CONTEXT_EXECUTE_BUFFEER,
-          keybindings: [ monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F9 ], // [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F10],
+          keybindings: kb, 
           keybindingContext: null, // ??
           contextMenuGroupId: '80_exec',
           contextMenuOrder: 2,
@@ -730,6 +747,15 @@ class Editor {
     let instance = this;
     return new Promise( function( resolve, reject ){
       if( tab.opts.dirty ){
+
+        let accelerator = "()";
+        Menus.KeyboardShortcuts.some( function( shortcut ){
+          if( shortcut.id === 'kb-editor-unclose-tab' ){
+            accelerator = shortcut.accelerator;
+            return true;
+          }
+        });
+
         let fname = path.basename(tab.opts.file || Messages.UNTITLED);
         let rslt = dialog.showMessageBox(null, {
           buttons: [
@@ -740,7 +766,7 @@ class Editor {
           defaultId: 0, 
           title: Messages.CHECK_SAVE_DIALOG_TITLE,
           message: Utils.templateString( Messages.CHECK_SAVE_DIALOG_MESSAGE, fname ),
-          detail: Messages.CHECK_SAVE_DIALOG_DETAIL
+          detail: Utils.templateString( Messages.CHECK_SAVE_DIALOG_DETAIL, accelerator )
         });
 
         if( rslt === 2 ) return reject(); // cancel
@@ -1004,9 +1030,9 @@ class Editor {
 
       if( !saveAs && tab.opts.preventSave ){
         dialog.showMessageBox({
-          title: Messages.FILE_CHANGED_WARNING.TITLE,
-          message: Messages.FILE_CHANGED_WARNING.MESSAGE,
-          detail: Messages.FILE_CHANGED_WARNING.DETAIL
+          title: Messages.FILE_CHANGED_WARNING_TITLE,
+          message: Messages.FILE_CHANGED_WARNING_MESSAGE,
+          detail: Messages.FILE_CHANGED_WARNING_DETAIL
         });
         saveAs = true;
       }

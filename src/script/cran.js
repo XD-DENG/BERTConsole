@@ -289,13 +289,15 @@ const showPackageChooserInternal = function(R, settings, cran){
       if( data.selected ) selected_count++;
       else selected_count--;
 
-      if( selected_count === 0 )
-        chooser.nodes['dialog-footer-status-message'].textContent = "";
-      else if( selected_count === 1 )
-        chooser.nodes['dialog-footer-status-message'].textContent = `1 ${Messages.PACKAGE_SELECTED_SINGLE}`;
-      else
-        chooser.nodes['dialog-footer-status-message'].textContent = `${selected_count} ${Messages.PACKAGE_SELECTED_PLURAL}`;
+      let psarray = Messages.PACKAGE_SELECTED || [];
 
+      if( selected_count === 0 ){
+        chooser.nodes['dialog-footer-status-message'].textContent = "";
+      }
+      else {
+        chooser.nodes['dialog-footer-status-message'].textContent = 
+          Utils.templateString( psarray[ selected_count == 1 ? 0 : 1 ], selected_count );
+      }
 
       // console.info( "index", n.index, "data", n.data );
     };

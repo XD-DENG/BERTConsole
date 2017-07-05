@@ -267,11 +267,21 @@ const updateFocusMessage = function(){
   let message;
   if(!(split.visible[0] && split.visible[1] )) message = "";
   else {
+
     state.focus_message_count = state.focus_message_count || 0;
     let msg = Messages.CHANGE_FOCUS;
+    let accelerator = "()";
+
+    ApplicationMenus.KeyboardShortcuts.some(function(shortcut){
+      if( shortcut.id === 'kb-toggle-editor-shell' ){
+        accelerator = shortcut.accelerator;
+        return true;
+      }
+    });
+
     if( state.focus_message_count++ < 8 ) msg = Messages.CHANGE_FOCUS_LONG;
     message = Utils.templateString( msg, state.focused === "editor" ? Messages.EDITOR : Messages.SHELL, 
-      Messages.WINDOW_SWITCH_SHORTCUT );
+      accelerator ); // Messages.WINDOW_SWITCH_SHORTCUT );
   }
   PubSub.publish( "status-message", message );
 };
@@ -803,38 +813,68 @@ init_r();
 
 ///////////
 
-window.addEventListener( "keydown", function(e){
-  if( e.ctrlKey ){
-    if( e.code === "PageUp" ){
-      e.stopPropagation();
-      e.preventDefault();
-      editor.switchTab(-1);
-    }
-    else if( e.code === "PageDown" ){
-      e.stopPropagation();
-      e.preventDefault();
-      editor.switchTab(1);
-    }
-    else if( e.code === "KeyT" && e.shiftKey ){
-      e.stopPropagation();
-      e.preventDefault();
-      editor.uncloseTab();
-    }
-    else if( e.code === "KeyE" && !e.shiftKey ){
-      e.stopPropagation();
-      e.preventDefault();
-      if( state.focused === "editor" ) shell.focus();
-      else editor.focus();
-    }
-    else if( e.code === "F8" ){
-      e.stopPropagation();
-      e.preventDefault();
-      shell.clear();
-      spinner.update();
-    }
-    // else { console.info( e.code ); window.e = e; }
-    return;
+// let's map these to fields rather than doing regexp comparisons every time
+// FIXME: support runtime changes?
+
+let KBShortcutMap = ApplicationMenus.KeyboardShortcuts.map( function(shortcut){
+  let item = {
+    id: shortcut.id,
+    shiftKey: !!/shift\+/i.test(shortcut.accelerator),
+    ctrlKey: !!/ctrl\+|cmd\+/i.test(shortcut.accelerator),
+    code: shortcut.accelerator.replace( /^.*\+([^\+]*)$/, "$1" )
+  };
+  if( item.code.length === 1 ) item.code = `Key${item.code}`;
+  return item;
+});
+
+/**
+ * check if the keyboard event matches a shortcut in our map
+ * @param {*} e 
+ */
+const getKBShortcutID = function(e){
+  for( let i = 0; i< KBShortcutMap.length; i++ ){
+    let item = KBShortcutMap[i];
+    if( e.code === item.code && e.shiftKey === item.shiftKey && e.ctrlKey === item.ctrlKey ) return item.id;
   }
+  return null;
+}
+
+// FIXME: read these from menu module accelerators
+
+window.addEventListener( "keydown", function(e){
+
+  let id = getKBShortcutID(e);
+  if( !id ) return;
+  
+  switch(id){
+  case 'kb-toggle-editor-shell':
+    e.stopPropagation(); e.preventDefault();
+    if( state.focused === "editor" ) shell.focus();
+    else editor.focus();
+    break;
+
+  case 'kb-editor-unclose-tab':
+    e.stopPropagation(); e.preventDefault();
+    editor.uncloseTab();
+    break;
+
+  case 'kb-editor-previous-tab':
+    e.stopPropagation(); e.preventDefault();
+    editor.switchTab(-1);
+    break;
+
+  case 'kb-editor-next-tab':
+    e.stopPropagation(); e.preventDefault();
+    editor.switchTab(1);
+    break;
+   
+  case 'kb-shell-clear-shell':
+    e.stopPropagation(); e.preventDefault();
+    shell.clear();
+    spinner.update();
+    break;
+  }
+
 });
 
 PubSub.subscribe( "error", function( channel, data ){

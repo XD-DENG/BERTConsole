@@ -221,7 +221,18 @@ class Utils {
     return arr;
   }
 
+  static mapMonacoKeycode( accelerator ){
+    let x = accelerator.replace( /^.*\+([^\+]*)$/, "$1" );
+    let code = this.KeyCode[x];
+    if( /ctrl\+|cmd\+/i.test( accelerator )) code |= this.KeyMod.CtrlCmd;
+    if( /shift\+/i.test( accelerator )) code |= this.KeyMod.Shift;
+    if( /alt\+/i.test( accelerator )) code |= this.KeyMod.Alt;
+    return [code];
+  }
+
 }
+
+window.mx = Utils.mapMonacoKeycode;
 
 module.exports = { Utils };
 

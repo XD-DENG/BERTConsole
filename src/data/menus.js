@@ -1,6 +1,24 @@
 
 module.exports = {
 
+  // to support a unified model of shortcuts, keyboard functions that 
+  // are not otherwise labeled (because they're not in any menus) are 
+  // included here.  todo: allow override?
+
+  KeyboardShortcuts: [
+    { id: 'kb-toggle-editor-shell', accelerator: 'Ctrl+E' },
+    { id: 'kb-editor-unclose-tab', accelerator: 'Ctrl+Shift+T' },
+    { id: 'kb-editor-previous-tab', accelerator: 'Ctrl+PageUp' },
+    { id: 'kb-editor-next-tab', accelerator: 'Ctrl+PageDown' },
+    { id: 'kb-editor-execute-selected-code', accelerator: 'F9' },
+    { id: 'kb-editor-execute-buffer', accelerator: 'Ctrl+Shift+F9' },
+    { id: 'kb-shell-clear-shell', accelerator: 'Ctrl+F8' }
+  ],
+
+  // these are context menu items added to the editor, which has its 
+  // own menu system (actually this works backwards; we read monaco's 
+  // menu, then create an electron menu with the merged item set).
+
   // editor tab context menu
 
   EditorTabContext: [
@@ -27,12 +45,12 @@ module.exports = {
         {
           id: "file-new",
           label: "New",
-          accelerator: "CmdOrCtrl+N"
+          accelerator: "Ctrl+N"
         },
         {
           id: "file-open",
           label: "Open...",
-          accelerator: "CmdOrCtrl+O"
+          accelerator: "Ctrl+O"
         },
         {
           id: "open-recent",
@@ -42,7 +60,7 @@ module.exports = {
         {
           id: "file-save",
           label: "Save",
-          accelerator: "CmdOrCtrl+S"
+          accelerator: "Ctrl+S"
         },
         {
           id: "file-save-as",
@@ -56,7 +74,7 @@ module.exports = {
         {
           id: "file-close",
           label: "Close Document",
-          accelerator: "CmdOrCtrl+W"
+          accelerator: "Ctrl+W"
         },
         {
           type: "separator"
@@ -211,7 +229,7 @@ module.exports = {
             {
               id: "developer-reload",
               label: "Reload",
-              accelerator: "CmdOrCtrl+R"
+              accelerator: "Ctrl+R"
             },
             {
               label: "Toggle Developer Tools",
