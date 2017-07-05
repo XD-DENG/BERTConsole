@@ -254,6 +254,7 @@ class Editor {
     `;
 
     this._nodes = Utils.parseHTML( editorHTML, container );
+    this._nodes['editor-status-message'].textContent = Messages.READY;
 
     instance._nodes['editor-header'].addEventListener( "contextmenu", function(e){
       e.stopPropagation();
@@ -729,7 +730,7 @@ class Editor {
     let instance = this;
     return new Promise( function( resolve, reject ){
       if( tab.opts.dirty ){
-        let fname = path.basename(tab.opts.file || "Untitled");
+        let fname = path.basename(tab.opts.file || Messages.UNTITLED);
         let rslt = dialog.showMessageBox(null, {
           buttons: [
             Messages.CHECK_SAVE_YES, 
@@ -893,8 +894,8 @@ class Editor {
 
     let label = document.createElement("div");
     label.className = "label";
-    label.textContent = path.basename(opts.file || "Untitled");
-    label.setAttribute( "title", opts.file || "Untitled" );
+    label.textContent = path.basename(opts.file || Messages.UNTITLED);
+    label.setAttribute( "title", opts.file || Messages.UNTITLED );
     tab.appendChild( label );
 
     let icon = document.createElement("div");

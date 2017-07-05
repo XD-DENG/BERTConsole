@@ -76,6 +76,7 @@ module.exports = {
     LOADING_PACKAGE_LIST: "Loading package list, please wait...",
     AVAILABLE_PACKAGES: "Available Packages",
     FILTER_NAME_ONLY: "Filter on Package Name Only",
+    HTTPS_MIRRORS_ONLY: "HTTPS Mirrors Only",
 
     // mirrors
 
@@ -87,6 +88,7 @@ module.exports = {
   Editor: {
 
     UNTITLED: "Untitled",
+    READY: "Ready",
 
     // status info
 
@@ -132,7 +134,7 @@ module.exports = {
     REPLACE_ONE: "Replace One",
     REPLACE_ALL: "Replace All",
     */
-    
+
     // errors
 
     FILE_READ_ERROR: "File read error", 
