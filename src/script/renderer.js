@@ -359,7 +359,10 @@ const updateMenu = function(){
  */
 const download_file = function(opts){
 
-  console.info( "DF", opts );
+  console.info( "DF", opts ); 
+
+  // check
+  if((typeof opts.destfile) !== "string") return Promise.reject( Messages.MISSING_DEST_FILE );
 
 	return new Promise( function( resolve, reject ){
 		
@@ -628,6 +631,7 @@ let settings = Model.createFileStorageProxy({
     resize: true
   },
   editor: {
+    minimap: { enabled: false },
     theme: "vs",
     lineNumbers: true,
     statusBar: true,
@@ -784,7 +788,7 @@ editor.init( split.panes[0], editorOptions ).then( function(){
   let availableVersion = Utils.encode_version(settings.update['last-version']);
   let notifyVersion = Utils.encode_version(settings.update['notify-version']);
 
-   console.info( "CV", currentVersion, "AV", availableVersion, "NV", notifyVersion );
+  // console.info( "CV", currentVersion, "AV", availableVersion, "NV", notifyVersion );
 
   if( availableVersion <= currentVersion || availableVersion === notifyVersion) return;
   Notifier.notify({ 

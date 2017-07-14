@@ -1,7 +1,7 @@
 {
   "description": "BERT Console",
   "name": "bert-shell",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -9,15 +9,15 @@
     "build": "sh ./build.sh"
   },
   "dependencies": {
-    "chokidar": "^1.6.1",
+    "chokidar": "^1.7.0",
     "cmjs-shell": "^0.3.10",
-    "deep-diff": "^0.3.4",
-    "electron": "^1.6.2",
-    "electron-window-state": "^4.0.2",
-    "monaco-editor": "^0.8.3",
-    "pubsub-js": "^1.5.5"
+    "deep-diff": "^0.3.8",
+    "electron": "^1.6.11",
+    "electron-window-state": "^4.1.1",
+    "monaco-editor": "^0.9.0",
+    "pubsub-js": "^1.5.7"
   },
   "devDependencies": {
-    "electron-packager": "^8.5.2"
+    "electron-packager": "^8.7.2"
   }
 }

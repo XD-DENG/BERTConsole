@@ -65,6 +65,7 @@ module.exports = {
     DOWNLOADING: "Downloading",
     DOWNLOAD_COMPLETE: "Download Complete",
     DOWNLOAD_FAILED: "Download Failed",
+    MISSING_DEST_FILE: "Missing destination file",
 
     // packages 
 

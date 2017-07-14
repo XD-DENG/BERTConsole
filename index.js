@@ -68,11 +68,16 @@ ipcMain.on('download', function(event, opts = {}){
 		item.setSavePath(filePath);
 
 		item.on('updated', () => {
-			mainWindow.setProgressBar(item.getReceivedBytes() / totalBytes);
+
+      console.info( 'updated', arguments );
+
+      mainWindow.setProgressBar(item.getReceivedBytes() / totalBytes);
 			webContents.send( 'download-progress', { received: item.getReceivedBytes(), total: totalBytes });
 		});
 
 		item.on('done', (e, state) => {
+
+      console.info( 'done', arguments );
 
 			if (!mainWindow.isDestroyed()) {
 				mainWindow.setProgressBar(-1);
