@@ -631,7 +631,7 @@ let settings = Model.createFileStorageProxy({
     resize: true
   },
   editor: {
-    minimap: { enabled: false },
+    minimap: { enabled: false }, // default to false
     theme: "vs",
     lineNumbers: true,
     statusBar: true,
@@ -639,6 +639,22 @@ let settings = Model.createFileStorageProxy({
     insertSpaces: true
   }
 }, settingsFile, "settings-change", { pretty: true });
+
+// here's a thing: in a recent update to monaco editor, they added (and 
+// enabled by default) a minimap.  the default settings above will turn it
+// off, but if you upgrade it will be enabled.  we will disable by default 
+// unless there's already a setting; that should support upgrades but still
+// allow you to enable it if you want.
+
+// the minimap is fine, I just don't want it on by default as it takes up 
+// a bunch of room.
+
+//if( settings && settings.editor && !settings.editor.minimap ){
+//  settings.editor.minimap = { enabled: false };
+//}
+
+// UPDATE: let's just make false the default in the editor, unless it's 
+// explicitly enabled.
 
 window.settings = settings;
 
@@ -967,8 +983,10 @@ PubSub.subscribe( "settings-change", function( channel, data ){
 
   let m = data[0].match( /editor\.(.*)$/ );
   if( m ){
+
     let opts = {};
     opts[m[1]] = Utils.dereference_get( settings, data[0] );
+    Utils.nest_keys(opts); // support nested options
     editor.updateOptions(opts);
     Utils.layoutCSS(); // in case the editor monkeys around with it
     return;

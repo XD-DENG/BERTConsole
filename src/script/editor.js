@@ -216,6 +216,15 @@ class Editor {
     options = options || {};
     let instance = this;
 
+    // UPDATE: default option to minimap OFF, unless there are any
+    // minimap options.  this is a split from Code, which has minimap
+    // on by default.
+
+    if(!options.minimap){
+      console.info( "NOTE: setting minimap to disabled by default.  add a setting to bs-settings.json to enable.")
+      options.minimap = { enabled: false };
+    }
+
     function handleDragover(e) {
       e.stopPropagation();
       e.preventDefault();

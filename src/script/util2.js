@@ -78,6 +78,22 @@ class Utils {
   }
 
   /**
+   * given "a.b.c": x, convert that to  a: { b: { c: x }}.  destructive.
+   */
+  static nest_keys(obj){
+    Object.keys(obj).forEach( function( key ){
+      let m = key.match(/^([^\.]+)\.(.*)$/);
+      if( m ){
+        let val = obj[key];
+        if(((typeof val) === "object" ) && !Array.isArray(val)) val = Utils.nest_keys(val);
+        delete obj[key];
+        obj[m[1]] = {};
+        obj[m[1]][m[2]] = val;
+      }
+    })
+  } 
+
+  /**
    * given a block of html, add it to the target node
    * (just set innerHTML), then return a map of all 
    * nodes that have ids.
