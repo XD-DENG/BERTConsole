@@ -184,6 +184,9 @@ class Editor {
    * this gets called if the option is set (runtime) as well as ALWAYS 
    * at startup to set default.
    * 
+   * UPDATE: we now explicitly call editor.setTheme.  setting the theme 
+   * property is no longer sufficient (works at init, but not after that).
+   * 
    * @param {*} theme 
    */
   _updateEditorTheme( theme ){
@@ -202,6 +205,10 @@ class Editor {
 
     this._nodes['editor-header'].classList.add(theme);
     this._nodes['editor-footer'].classList.add(theme);
+
+    if( self.monaco ){
+      monaco.editor.setTheme(theme);
+    }
 
   }
 
@@ -383,8 +390,8 @@ class Editor {
       }
     });
 
-    this._handleLocalOptions( options );
     this._updateEditorTheme( options.theme );
+    this._handleLocalOptions( options );
 
     return new Promise( function( resolve, reject ){
 
@@ -1004,9 +1011,12 @@ class Editor {
    * @param {string} theme 
    */
   updateOptions(opts){
+    if( typeof opts.theme !== "undefined" ){
+      this._updateEditorTheme( opts.theme );
+      delete opts.theme;
+    }
     this._handleLocalOptions(opts);
     this._editor.updateOptions(opts);
-    if( typeof opts.theme !== "undefined" ) this._updateEditorTheme( opts.theme );
   }
 
   /**
