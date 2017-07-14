@@ -500,6 +500,10 @@ class Editor {
           // we may be able to just pass the translated binding in to electron (but 
           // will that only work for EN-US?)
 
+          // UPDATE: as of monaco editor 0.9, keybindings labels are now in the
+          // keybinding accessed via keybinding.getLabel().  keybinding may 
+          // have previously been a scalar, but now it's a proper object.
+
           let cm = instance._editor.getContribution( "editor.contrib.contextmenu" );
           let ma = cm._getMenuActions();
           let menu = new Menu();
@@ -510,9 +514,8 @@ class Editor {
             }
             else {
 
-              // don't call getlabelfor if there's no keybinding, it will throw
               let kb = cm._keybindingFor( action );
-              let accel = kb ? cm._keybindingService.getLabelFor(kb) : null;
+              let accel = kb ? kb.getLabel() : null;
 
               menu.append(new MenuItem({
                 label: action.label,
