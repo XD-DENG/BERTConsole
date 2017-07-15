@@ -382,7 +382,7 @@ const download_file = function(opts){
 
 		ipcRenderer.on( 'download-progress', function( event, args ){
 			if( progressbar ){
-				if( progressbar.max === 1 ) progressbar.max = args.total;
+				if( progressbar.max === 1 && args.total > 0) progressbar.max = args.total;
 				progressbar.value = args.received;
         ProgressBarManager.update(progressbar);
 			}
