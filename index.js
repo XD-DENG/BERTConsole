@@ -55,7 +55,6 @@ ipcMain.on('download', function(event, opts = {}){
 
 	let url = opts.url;
   let dest = opts.destfile;
-  let timeout = opts.timeout || 500;
   let timed_out = false;
   let timeout_token = 0;
 
@@ -91,13 +90,14 @@ ipcMain.on('download', function(event, opts = {}){
 			
 		});
 
-    timeout_token = setTimeout( function(){
-      if( item.getReceivedBytes() === 0 ){
-        timed_out = true;
-        item.cancel();
-      }
-    }, timeout );
-
+    if( opts.timeout ){
+      timeout_token = setTimeout( function(){
+        if( item.getReceivedBytes() === 0 ){
+          timed_out = true;
+          item.cancel();
+        }
+      }, opts.timeout );
+    }
 	};
 	
 	mainWindow.webContents.session.on( 'will-download', listener );

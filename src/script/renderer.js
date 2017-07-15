@@ -360,7 +360,7 @@ const updateMenu = function(){
 const download_file = function(opts){
 
   console.info( "file download", opts ); 
-  if( !opts.timeout ) opts.timeout = 500;
+  if( !opts.timeout ) opts.timeout = 2500;
 
   // check
   if((typeof opts.destfile) !== "string") return Promise.reject( Messages.MISSING_DEST_FILE );
