@@ -1,5 +1,5 @@
 
-const {app, BrowserWindow, ipcMain} = require('electron')
+const {app, BrowserWindow, ipcMain, dialog} = require('electron')
 const windowStateKeeper = require('electron-window-state');
 
 // flag opens devtools automatically, useful for debug
@@ -54,10 +54,14 @@ app.on('activate', function () {
 ipcMain.on('download', function(event, opts = {}){
 
 	let url = opts.url;
-	let dest = opts.destfile;
+  let dest = opts.destfile;
+  let timeout = opts.timeout || 500;
+  let timed_out = false;
+  let timeout_token = 0;
+
 	let listener = function(event, item, webContents){
 		
-		let totalBytes = item.getTotalBytes();
+    let totalBytes = item.getTotalBytes();
 		let filePath = dest || path.join(app.getPath('downloads'), item.getFilename());
 
 		// NOTE: this fails with unix-y paths.  R is building these paths incorrectly
@@ -68,29 +72,31 @@ ipcMain.on('download', function(event, opts = {}){
 		item.setSavePath(filePath);
 
 		item.on('updated', () => {
-
-      console.info( 'updated', arguments );
-
       mainWindow.setProgressBar(item.getReceivedBytes() / totalBytes);
 			webContents.send( 'download-progress', { received: item.getReceivedBytes(), total: totalBytes });
 		});
 
 		item.on('done', (e, state) => {
 
-      console.info( 'done', arguments );
+      if( timeout_token ) clearTimeout(timeout_token);
 
 			if (!mainWindow.isDestroyed()) {
 				mainWindow.setProgressBar(-1);
 			}
-
 			if (state === 'interrupted') {
 				// electron.dialog.showErrorBox('Download error', `The download of ${item.getFilename()} was interrupted`);
 			}
-
-			webContents.send( 'download-complete', { path: filePath, name: item.getFilename(), size: totalBytes, state: state });
+			webContents.send( 'download-complete', { path: filePath, name: item.getFilename(), size: totalBytes, state, timed_out });
 			webContents.session.removeListener('will-download', listener);
 			
 		});
+
+    timeout_token = setTimeout( function(){
+      if( item.getReceivedBytes() === 0 ){
+        timed_out = true;
+        item.cancel();
+      }
+    }, timeout );
 
 	};
 	

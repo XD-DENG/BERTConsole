@@ -359,7 +359,8 @@ const updateMenu = function(){
  */
 const download_file = function(opts){
 
-  console.info( "DF", opts ); 
+  console.info( "file download", opts ); 
+  if( !opts.timeout ) opts.timeout = 500;
 
   // check
   if((typeof opts.destfile) !== "string") return Promise.reject( Messages.MISSING_DEST_FILE );
@@ -393,10 +394,11 @@ const download_file = function(opts){
         ProgressBarManager.update(progressbar);
       }
 			if( args.state !== "completed" ){
+        let state = args.timed_out ? "timed out" : args.state;
         if( !opts.quiet )
-				  shell.response( `\n${Messages.DOWNLOAD_FAILED}: ${args.state}\n` );
+				  shell.response( `\n${Messages.DOWNLOAD_FAILED}: ${state}\n` );
         else {
-          console.info( `${Messages.DOWNLOAD_FAILED} (quiet): ${args.state}`);
+          console.info( `${Messages.DOWNLOAD_FAILED} (quiet): ${state}`);
           console.info( opts );
         }
 			}
@@ -405,7 +407,7 @@ const download_file = function(opts){
 			resolve( args.state === "completed" ? 0 : -1 );
 		});
 		
-  	ipcRenderer.send( "download", opts );
+    ipcRenderer.send( "download", opts );
 		
 	});
 		
@@ -540,7 +542,7 @@ const init_r = function(){
     else if( args.channel === "download" ){
       let obj = JSON.parse(args.data);
       download_file(obj.$data).then( function( result ){
-        R.internal([ "sync-response", result ]);
+        R.internal([ "sync-response", result || 0 ]); // NEVER return null here
       }).catch( function( err ){
         console.error( "download error", err );
         R.internal([ "sync-response", -1 ]);
