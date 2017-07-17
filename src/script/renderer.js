@@ -351,7 +351,6 @@ const updateMenu = function(){
 
 };
 
-
 /**
  * download a file, using electron utilities and optionally adding a 
  * progress bar.  this will get called by the module if download method 

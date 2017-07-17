@@ -20,6 +20,9 @@ yarn install --production
 # we're not caching, so clean up
 rm yarn.lock
 
+# TEMP: patch r language tokenizer
+cp ../r-patched.js node_modules/monaco-editor/min/vs/basic-languages/src/r.js
+
 # now package
 cd ..
 node_modules/.bin/electron-packager build --platform=win32 --arch=ia32 --icon=icon.ico
