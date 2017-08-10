@@ -574,7 +574,10 @@ const init_r = function(){
     });
 
     window.addEventListener("beforeunload", function (event) {
-      if( global.__quit || global.allowReload ) return;
+      if( global.__quit || global.allowReload ){
+        editor.beforeClose();
+        return;
+      } 
       event.returnValue = false;
       R.internal( ["hide"], "hide" );
     });

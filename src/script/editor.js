@@ -43,6 +43,7 @@ const Messages = require( "../data/messages.js" ).Editor;
 const Menus = require( "../data/menus.js" );
 
 const MAX_UNCLOSED_TABS = 8; // ??
+const RESTORE_KEY_PREFIX = "restore-data-";
 
 //-----------------------------------------------------------------------------
 //
@@ -613,8 +614,12 @@ class Editor {
           let files = instance._fileSettings.openFiles.slice(0);
           let loadNext = function(){
             return new Promise( function( resolve, reject ){
-              let file = files.shift();
-              instance._load( file, true, true ).then( function(){
+              let vs, file = files.shift();
+              if( typeof file === "object" ){
+                vs = file.vs;
+                file = file.file;
+              }
+              instance._load( file, true, true, vs ).then( function(){
                 if( files.length ){
                   loadNext().then( function(){
                     resolve();
@@ -628,6 +633,7 @@ class Editor {
             removePlaceholder();
             instance._selectTab(instance._fileSettings.activeTab || 0);
             instance._updateOpenFiles(); // this cleans up any files that couldn't be opened
+            instance._restoreDirtyFiles();
           })
         }
         else {
@@ -641,6 +647,34 @@ class Editor {
       });
 
     });
+
+  }
+
+  /**
+   * this function will get called when the editor is closing.
+   * use it to do any cleanup or preservation operations.
+   */
+  beforeClose(){
+
+    // preserve cursor positions
+
+    this._updateOpenFiles();
+
+    // we're going to store dirty files on close, to prevent 
+    // accidental data loss.  we'll set an arbitrary limit on
+    // number, and there's an implicit 10Mb limit on file size.
+
+    // why are we not holding a reference to tabs? this seems silly
+
+    let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
+    for( let i = 0; i< tabs.length; i++ ){
+      if( tabs[i].opts.dirty ){
+        console.info( `preserving dirty tab ${i}`);
+        let key = RESTORE_KEY_PREFIX + (tabs[i].opts.file || `unnamed-${i}`).replace( /[^\w-\.]/g, "_" );
+        let contents = tabs[i].opts.model.getValue();
+        localStorage.setItem(key, contents);
+      }
+    }
 
   }
 
@@ -970,13 +1004,49 @@ class Editor {
 
   }
 
+  /**
+   * after loading, restore files that were closed without saving (if we 
+   * have them). at the same time clean up storage.
+   */
+  _restoreDirtyFiles(){
+
+    let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
+    let keys = [];
+
+    // get keys first b/c length changes in loop
+    for( let i = 0; i< localStorage.length; i++ ) keys.push(localStorage.key(i));
+
+    let rexTest = new RegExp("^" + RESTORE_KEY_PREFIX);
+
+    keys.forEach( function(key){
+
+      if( rexTest.test(key)){
+        let contents = localStorage.getItem(key);
+        Array.prototype.forEach.call( tabs, function( tab, index ){
+          let match = RESTORE_KEY_PREFIX + (tab.opts.file || `unnamed-${i}`).replace( /[^\w-\.]/g, "_" );
+          if( match === key ){
+            console.info( "have restore data for tab", index );
+            tab.opts.model.pushEditOperations( [], [{ range: tab.opts.model.getFullModelRange(), identifier: 'restore', text: contents }], undefined );
+            tab.opts.dirty = true;
+            tab.classList.add( "dirty" );
+            window.M = tab.opts.model;
+          }
+        });
+        localStorage.removeItem(key);
+      }
+    });
+
+    window.E = this._editor;
+  }
+
   _updateOpenFiles(){
     let tabs = this._nodes['editor-header'].querySelectorAll( ".editor-tab" );
     let files = Array.prototype.map.call( tabs, function( tab ){
       if( tab.opts && tab.opts.file ){
-        return tab.opts.file;
+        if( tab === this._activeTab ) tab.opts.state = this._editor.saveViewState();
+        return {file: tab.opts.file, vs: tab.opts.state || {}};
       }
-    });
+    }, this);
     this._fileSettings.openFiles = files.filter( function( f ){ return f; });
   }
 
@@ -1194,7 +1264,7 @@ class Editor {
    * @param {*} add 
    * @param {*} toll 
    */
-  _load( file, add, toll ){
+  _load( file, add, toll, viewState ){
 
     if( !toll ) this._updateRecentFiles( file );
     let instance = this;
@@ -1218,7 +1288,7 @@ class Editor {
         }
         else {
           Watcher.watch( file );
-          instance._addTab({ file: file, value: contents }, toll);
+          instance._addTab({ file: file, value: contents, state: viewState }, toll);
           /*
           watchFile( file );
           addEditor({ path: file, value: contents, node: opts.node }, toll);

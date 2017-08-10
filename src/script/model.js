@@ -146,7 +146,7 @@ class Model {
    * @param {*} save 
    * @param {*} restore 
    */
-  static createBackedProxy(o, event, save, restore) {
+  static createBackedProxy(o, event, save, restore, saveOnClose) {
 
     event = event || DEFAULT_EVENT;
     Object.defineProperty( o, "__event__", { enumerable: false, configurable: false, value: event });
@@ -157,13 +157,21 @@ class Model {
     let model = Model.createProxy(o, function( prop, val ){
 
       // lightly batch saves for super fast changes (also ensure async)
-      // FIXME: handle window closing
 
       if( !timerID ){
         timerID = setTimeout( function(){
           save(model.__base__);
           timerID = null;
         }, 100 );
+      }
+
+      // save on close
+
+      if( saveOnClose && typeof window !== "undefined" ){
+        window.addEventListener("unload", function(){
+          timerID = null;
+          save(model.__base__);
+        });
       }
 
       // broadcast event
@@ -215,7 +223,7 @@ class Model {
       return {};
     };
 
-    return Model.createBackedProxy(o, event, save, restore);
+    return Model.createBackedProxy(o, event, save, restore, true);
     
   }
 
